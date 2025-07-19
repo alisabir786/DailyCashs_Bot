@@ -1,21 +1,20 @@
-# main.py
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-from wallet import show_wallet         # 💰 Wallet ফাংশন
-from profile import show_profile       # 👤 Profile ফাংশন
-from daily_checkin import show_daily_checkin  # 📅 Daily Check-in ফাংশন
+from wallet import show_wallet
+from profile import show_profile
+from daily_checkin import show_daily_checkin
+from spin import show_spin
+from task import show_task
+from withdrawal import show_withdrawal_menu
 
 import config
-
 
 # 👋 /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     chat_id = update.effective_chat.id
 
-    # ইউজার যদি নতুন হয়
     if user.id not in config.USERS:
         config.USERS[user.id] = {
             "first_name": user.first_name,
@@ -33,16 +32,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👇 শুরু করতে Play বাটনে ক্লিক করুন:"
     )
 
-    # Welcome Image + Play Button
     await context.bot.send_photo(
         chat_id=chat_id,
-        photo="https://i.ibb.co/3cnfGR0/welcome-image.png",  # ইমেজ ইউআরএল বদলাতে পারো
+        photo="https://i.ibb.co/3cnfGR0/welcome-image.png",
         caption=welcome_text,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("▶️ Play", callback_data="open_menu")]
         ])
     )
-
 
 # 🎮 Main Menu
 def get_main_menu():
@@ -57,39 +54,32 @@ def get_main_menu():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-
 # 📲 Callback Menu Handler
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.data == "open_menu":
+    data = query.data
+
+    if data == "open_menu":
         await query.edit_message_caption(
             caption="🏠 মেইন মেনু:",
             reply_markup=get_main_menu()
         )
-
-    elif query.data == "wallet":
+    elif data == "wallet":
         await show_wallet(update, context)
-
-    elif query.data == "profile":
+    elif data == "profile":
         await show_profile(update, context)
-
-    elif query.data == "daily_checkin":
+    elif data == "daily_checkin":
         await show_daily_checkin(update, context)
-
-    elif query.data == "spin":
-        await query.edit_message_text("🎯 স্পিন গেম লোড হচ্ছে...")
-
-    elif query.data == "task":
-        await query.edit_message_text("🧩 টাস্ক লোড হচ্ছে...")
-
-    elif query.data == "profile_settings":
+    elif data == "spin":
+        await show_spin(update, context)
+    elif data == "task":
+        await show_task(update, context)
+    elif data == "withdraw":
+        await show_withdrawal_menu(update, context)
+    elif data == "profile_settings":
         await query.edit_message_text("⚙️ প্রোফাইল সেটিংস লোড হচ্ছে...")
-
-    elif query.data == "withdraw":
-        await query.edit_message_text("💵 উইথড্র লোড হচ্ছে...")
-
 
 # ✅ Bot Start Function
 def run_bot():
@@ -100,7 +90,6 @@ def run_bot():
 
     print("✅ Bot is running...")
     app.run_polling()
-
 
 # 🔥 Entry Point
 if __name__ == "__main__":
