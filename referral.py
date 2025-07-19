@@ -15,4 +15,3 @@ async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👥 রেফার সংখ্যা: {len(user_data['referrals'])}\n"
         f"🎁 প্রতি রেফারে ইনকাম: {config.REFER_REWARD} কয়েন"
     )
-# Referral system logic
