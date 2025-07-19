@@ -1,21 +1,22 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-import random
-import config
+import random, config
 
-async def play_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
-    user_data = config.USERS.get(user.id)
+async def show_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-    if not user_data:
-        await context.bot.send_message(chat_id, "❌ ইউজার ডেটা পাওয়া যায়নি!")
+    user_id = query.from_user.id
+    user = config.USERS.get(user_id)
+
+    if not user:
+        await query.edit_message_text("❌ ইউজার খুঁজে পাওয়া যায়নি!")
         return
 
     reward = random.choice(config.SPIN_REWARDS)
-    user_data["coins"] += reward
+    user["coins"] += reward
 
-    await context.bot.send_message(
-        chat_id,
-        f"🎯 আপনি স্পিন করে পেয়েছেন: {reward} কয়েন!\n💰 মোট কয়েন: {user_data['coins']}"
+    await query.edit_message_text(
+        f"🎯 আপনি স্পিনে পেয়েছেন: {reward} কয়েন!\n"
+        f"💰 মোট কয়েন: {user['coins']}"
     )
