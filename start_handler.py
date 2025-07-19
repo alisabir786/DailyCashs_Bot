@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 import config
 
@@ -17,7 +17,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "profile_photo": None
         }
 
-    welcome_text = f"👋 হ্যালো {user.first_name}!\n\n🎮 ইনকাম করতে শুরু করুন নিচের Play বাটনে ক্লিক করে!"
+    welcome_text = (
+        f"👋 হ্যালো {user.first_name}!\n\n"
+        "🎮 গেম খেলে, স্পিন করে, টাস্ক কমপ্লিট করে ইনকাম করুন!\n\n"
+        "👇 শুরু করতে Play বাটনে ক্লিক করুন:"
+    )
+
     await context.bot.send_photo(
         chat_id=chat_id,
         photo="https://i.ibb.co/3cnfGR0/welcome-image.png",
@@ -26,3 +31,4 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("▶️ Play", callback_data="open_menu")]
         ])
     )
+    
