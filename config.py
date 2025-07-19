@@ -1,31 +1,23 @@
-import os
 from dotenv import load_dotenv
+import os
 
-load_dotenv()  # .env ফাইল থেকে ভেরিয়েবল লোড
+# Load .env file
+load_dotenv()
 
-# 🔐 Secure Configurations from .env
+# Bot Configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID"))
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 
-# 🎁 Daily Check-in Rewards
-DAILY_REWARD = [4, 8, 16, 32, 72, 90, 120]
+# Rewards Configuration
+DAILY_REWARD = list(map(int, os.getenv("DAILY_REWARD").split(",")))
+SPIN_REWARDS = list(map(int, os.getenv("SPIN_REWARDS").split(",")))
+GAME_REWARD = int(os.getenv("GAME_REWARD"))
+VIDEO_REWARD = int(os.getenv("VIDEO_REWARD"))
+REFER_REWARD = int(os.getenv("REFER_REWARD"))
+REFER_PERCENT = float(os.getenv("REFER_PERCENT"))
 
-# 🎯 Spin Rewards
-SPIN_REWARDS = [0, 5, 10, 30, 50, 100]
-
-# 🧩 Task Rewards
-GAME_REWARD = 5
-VIDEO_REWARD = 5
-
-# 👥 Referral
-REFER_REWARD = 10
-REFER_PERCENT = 0.10
-
-# 💵 Withdraw Settings
-MIN_WITHDRAWAL = 2000
-COIN_TO_TAKA = 100
-WITHDRAW_OPTIONS = [100, 300, 500, 1000]
-
-# 🗃️ In-Memory Dummy Database
-USERS = {}
+# Withdrawal Settings
+MIN_WITHDRAWAL = int(os.getenv("MIN_WITHDRAWAL"))
+COIN_TO_TAKA = int(os.getenv("COIN_TO_TAKA"))
+WITHDRAW_OPTIONS = list(map(int, os.getenv("WITHDRAW_OPTIONS").split(",")))
