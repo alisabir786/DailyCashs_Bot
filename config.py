@@ -1,29 +1,31 @@
-# config.py
+import os
+from dotenv import load_dotenv
 
-# Telegram Bot Config
-BOT_TOKEN = "7577689328:AAFCR1sewFUYRkmm2zNUKACjeOTQa1ZiC3o"
-OWNER_ID = 6955653010  # Admin ID
-BOT_USERNAME = "@DailyCashs_Bot"  # Bot Username
+load_dotenv()  # .env ফাইল থেকে ভেরিয়েবল লোড
 
-# 🎁 Daily Reward System
+# 🔐 Secure Configurations from .env
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID"))
+BOT_USERNAME = os.getenv("BOT_USERNAME")
+
+# 🎁 Daily Check-in Rewards
 DAILY_REWARD = [4, 8, 16, 32, 72, 90, 120]
 
-# 🎯 Spin Coin Rewards
+# 🎯 Spin Rewards
 SPIN_REWARDS = [0, 5, 10, 30, 50, 100]
 
-# 🧠 Game & Video Task Rewards
+# 🧩 Task Rewards
 GAME_REWARD = 5
 VIDEO_REWARD = 5
 
-# 🔗 Referral System
+# 👥 Referral
 REFER_REWARD = 10
-REFER_PERCENT = 0.10  # Lifetime earnings %
+REFER_PERCENT = 0.10
 
-# 💵 Withdrawal Settings
-MIN_WITHDRAWAL = 2000  # Coin
-COIN_TO_TAKA = 100  # 2000 coin = 100 Taka
-WITHDRAW_OPTIONS = [100, 300, 500, 1000]  # In Taka
+# 💵 Withdraw Settings
+MIN_WITHDRAWAL = 2000
+COIN_TO_TAKA = 100
+WITHDRAW_OPTIONS = [100, 300, 500, 1000]
 
-# 🗃️ Dummy Database (Python Dictionary)
-USERS = {}  # user_id: {user_info_dict}
-
+# 🗃️ In-Memory Dummy Database
+USERS = {}
