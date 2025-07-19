@@ -1,8 +1,10 @@
 from dotenv import load_dotenv
 import os
 
-# Load .env file
 load_dotenv()
+
+# Dummy user data (initial)
+USERS = {}
 
 # Bot Configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -21,6 +23,3 @@ REFER_PERCENT = float(os.getenv("REFER_PERCENT"))
 MIN_WITHDRAWAL = int(os.getenv("MIN_WITHDRAWAL"))
 COIN_TO_TAKA = int(os.getenv("COIN_TO_TAKA"))
 WITHDRAW_OPTIONS = list(map(int, os.getenv("WITHDRAW_OPTIONS").split(",")))
-
-# ✅ Memory storage for users
-USERS = {}
