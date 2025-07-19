@@ -2,7 +2,11 @@
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-from wallet import show_wallet  # ওয়ালেট ফাংশন ইমপোর্ট
+
+from wallet import show_wallet         # 💰 Wallet ফাংশন
+from profile import show_profile       # 👤 Profile ফাংশন
+from daily_checkin import show_daily_checkin  # 📅 Daily Check-in ফাংশন
+
 import config
 
 
@@ -64,19 +68,25 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             caption="🏠 মেইন মেনু:",
             reply_markup=get_main_menu()
         )
+
     elif query.data == "wallet":
         await show_wallet(update, context)
 
     elif query.data == "profile":
-        await query.edit_message_text("👤 প্রোফাইল লোড হচ্ছে...")
+        await show_profile(update, context)
+
     elif query.data == "daily_checkin":
-        await query.edit_message_text("📅 চেকইন লোড হচ্ছে...")
+        await show_daily_checkin(update, context)
+
     elif query.data == "spin":
         await query.edit_message_text("🎯 স্পিন গেম লোড হচ্ছে...")
+
     elif query.data == "task":
         await query.edit_message_text("🧩 টাস্ক লোড হচ্ছে...")
+
     elif query.data == "profile_settings":
         await query.edit_message_text("⚙️ প্রোফাইল সেটিংস লোড হচ্ছে...")
+
     elif query.data == "withdraw":
         await query.edit_message_text("💵 উইথড্র লোড হচ্ছে...")
 
@@ -95,3 +105,4 @@ def run_bot():
 # 🔥 Entry Point
 if __name__ == "__main__":
     run_bot()
+    
