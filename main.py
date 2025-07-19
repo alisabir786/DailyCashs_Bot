@@ -17,9 +17,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user.id not in config.USERS:
         config.USERS[user.id] = {
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "username": user.username,
+            "first_name": user.first_name or "",
+            "last_name": user.last_name or "",
+            "username": user.username or "",
             "coins": 0,
             "daily_day": 0,
             "referrals": [],
@@ -34,7 +34,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_photo(
         chat_id=chat_id,
-        photo="https://i.ibb.co/3cnfGR0/welcome-image.png",
+        photo="https://i.imgur.com/yXKp4Lw.png",  # ✅ Telegram-সাপোর্টেড ছবি
         caption=welcome_text,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("▶️ Play", callback_data="open_menu")]
