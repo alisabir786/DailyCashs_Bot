@@ -15,4 +15,3 @@ async def show_withdrawal_menu(update: Update, context: ContextTypes.DEFAULT_TYP
         text="💵 কত টাকা উইথড্র করতে চান?",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
-  
