@@ -1,4 +1,6 @@
-# wallet.py
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -36,4 +38,3 @@ def deduct_coins(user_id, amount):
         config.USERS[user_id]["coins"] -= amount
         return True
     return False
-  
