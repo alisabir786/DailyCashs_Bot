@@ -1,14 +1,21 @@
-# referral.py
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import config
 
-
 async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
-    user = config.USERS.get(user_id, {})
+    user = config.USERS.get(user_id)
+
+    # ইউজার নতুন হলে তাকে রেজিস্টার করে ফেলি
+    if user is None:
+        config.USERS[user_id] = {
+            "coins": 0,
+            "referrals": [],
+            "ref_bonus": 0,
+            "first_name": query.from_user.first_name
+        }
+        user = config.USERS[user_id]
 
     referral_link = f"https://t.me/{config.BOT_USERNAME.replace('@','')}?start={user_id}"
     referred_users = user.get("referrals", [])
@@ -16,12 +23,12 @@ async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = (
         f"👥 <b>Refer & Earn</b>\n\n"
-        "🔗 <b>Your Refer Link:</b>\n"
+        "🔗 <b>Your Referral Link:</b>\n"
         f"<code>{referral_link}</code>\n\n"
-        "🎁 <b>On Refer:</b> +10 Coin\n"
+        "🎁 <b>On Refer:</b> +10 Coin (for you)\n"
         "💸 <b>Lifetime Bonus:</b> 10% of their earnings\n\n"
         f"👫 <b>Total Referrals:</b> {len(referred_users)}\n"
-        f"💰 <b>Bonus Earned:</b> {bonus} Coin"
+        f"💰 <b>Bonus Earned:</b> {bonus} 🪙"
     )
 
     await query.message.edit_text(
@@ -31,3 +38,4 @@ async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("⬅️ Back", callback_data="open_menu")]
         ])
     )
+    
