@@ -34,3 +34,7 @@ elif data == "profile":
     await show_profile(update, context)
 elif data == "daily_checkin":
     await show_daily_checkin(update, context)
+elif data == "spin":
+    await show_spin(update, context)
+elif data == "do_spin":
+    await do_spin(update, context)
