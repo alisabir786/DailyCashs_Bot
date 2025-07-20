@@ -14,3 +14,10 @@ def run_bot():
 
 if __name__ == "__main__":
     run_bot()
+# Add in your callback_handler
+elif data == "wallet":
+    await show_wallet(update, context)
+elif data == "profile":
+    await show_profile(update, context)
+elif data == "daily_checkin":
+    await show_daily_checkin(update, context)
