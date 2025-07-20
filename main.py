@@ -93,3 +93,6 @@ app.add_handler(CallbackQueryHandler(ask_photo, pattern="^upload_photo$"))
 
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, save_name))
 app.add_handler(MessageHandler(filters.PHOTO, save_photo))
+from message_handler import handle_text
+
+app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text))
