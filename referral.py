@@ -1,13 +1,14 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import config
+from data_manager import save_users  # ডেটা সেভ করার জন্য দরকার হবে
 
 async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
     user = config.USERS.get(user_id)
 
-    # ইউজার নতুন হলে তাকে রেজিস্টার করে ফেলি
+    # নতুন ইউজার হলে রেজিস্টার করে ফেলি
     if user is None:
         config.USERS[user_id] = {
             "coins": 0,
@@ -16,6 +17,7 @@ async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "first_name": query.from_user.first_name
         }
         user = config.USERS[user_id]
+        save_users(config.USERS)  # ইউজার রেজিস্ট্রেশনের পর সেভ করা উচিত
 
     referral_link = f"https://t.me/{config.BOT_USERNAME.replace('@','')}?start={user_id}"
     referred_users = user.get("referrals", [])
