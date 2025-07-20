@@ -53,3 +53,27 @@ withdraw_conv = ConversationHandler(
 
 app.add_handler(withdraw_conv)
 
+from profile import (
+    show_profile, ask_name, save_name,
+    ask_photo, save_photo,
+    show_privacy, show_about,
+    AWAITING_NAME, AWAITING_PHOTO
+)
+
+profile_conv = ConversationHandler(
+    entry_points=[
+        CallbackQueryHandler(ask_name, pattern="^edit_name$"),
+        CallbackQueryHandler(ask_photo, pattern="^edit_photo$")
+    ],
+    states={
+        AWAITING_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_name)],
+        AWAITING_PHOTO: [MessageHandler(filters.PHOTO, save_photo)]
+    },
+    fallbacks=[]
+)
+
+app.add_handler(profile_conv)
+
+app.add_handler(CallbackQueryHandler(show_profile, pattern="^profile$"))
+app.add_handler(CallbackQueryHandler(show_privacy, pattern="^privacy$"))
+app.add_handler(CallbackQueryHandler(show_about, pattern="^about$"))
