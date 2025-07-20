@@ -96,3 +96,10 @@ async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ Withdrawal of ₹{amount} successful!\n⏳ Please wait 24 hours for processing.",
     )
     
+# add this block when UPI received (inside handle_text):
+
+config.USERS[user_id]["withdraw_request"] = {
+    "coin": coin_amount,
+    "amount": money,
+    "upi": upi
+}
