@@ -108,3 +108,9 @@ async def refer_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
     )
     
+def add_referral_bonus(user_id, coin_amount):
+    for uid, data in config.USERS.items():
+        if user_id in data["referrals"]:
+            bonus = int(coin_amount * config.REFER_PERCENT)
+            data["coins"] += bonus
+add_referral_bonus(user_id, coin_amount)
