@@ -1,9 +1,8 @@
-# profile.py
-
+import os
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 import config
-import os
+from data_manager import save_users  # ✅ সঠিকভাবে import
 
 user_profile_state = {}
 
@@ -49,6 +48,7 @@ async def save_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     new_name = update.message.text.strip()
     config.USERS.setdefault(user_id, {})["first_name"] = new_name
+    save_users(config.USERS)  # ✅ ডেটা ফাইল-এ সেভ করা
     user_profile_state.pop(user_id)
 
     await update.message.reply_text(f"✅ আপনার নাম আপডেট হয়েছে: {new_name}")
@@ -75,6 +75,7 @@ async def save_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await photo_file.download_to_drive(file_path)
 
     config.USERS.setdefault(user_id, {})["profile_photo"] = file_path
+    save_users(config.USERS)  # ✅ সেভ করে রাখি
     user_profile_state.pop(user_id)
 
     await update.message.reply_text("✅ আপনার প্রোফাইল ফটো আপডেট হয়েছে!")
