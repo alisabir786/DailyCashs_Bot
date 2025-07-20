@@ -56,3 +56,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # বাকি Welcome মেসেজ আগের মতোই থাকবে
     
+# Add in start_handler.py > start function
+
+referrer_id = None
+
+# Handle /start <referral_id>
+if context.args:
+    try:
+        referrer_id = int(context.args[0])
+        if referrer_id != user.id and user.id not in config.USERS[referrer_id]["referrals"]:
+            config.USERS[referrer_id]["referrals"].append(user.id)
+            config.USERS[referrer_id]["coins"] += 10  # instant bonus
+            config.USERS[referrer_id]["ref_bonus"] = config.USERS[referrer_id].get("ref_bonus", 0) + 10
+    except:
+        pass
+        
