@@ -1,16 +1,16 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-# Import necessary functions
+# Import feature handlers
 from wallet import show_wallet
-from profile import show_profile
+from profile import show_profile, ask_name, ask_photo
 from daily_checkin import show_daily_checkin
 from spin import show_spin, do_spin
 from task import show_task, game_task, video_task, refer_task
 from referral import show_referral
 from withdrawal import show_withdrawal
 
-# মেনু ডিজাইন
+# 🔘 Main menu layout
 def get_main_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("💰 Wallet", callback_data="wallet"),
@@ -22,13 +22,14 @@ def get_main_menu():
         [InlineKeyboardButton("💸 Withdrawal", callback_data="withdrawal")]
     ])
 
-# Callback Menu Handler
+# 📲 Callback menu handler
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     data = query.data
 
+    # 🏠 Back to Main Menu
     if data == "open_menu":
         await query.edit_message_caption(
             caption="🏠 মেইন মেনু:",
@@ -68,6 +69,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "withdrawal":
         await show_withdrawal(update, context)
 
+    # ✅ Profile Edit Options
+    elif data == "edit_name":
+        await ask_name(update, context)
+
+    elif data == "edit_photo":
+        await ask_photo(update, context)
+
     else:
         await query.edit_message_text("❌ অজানা কমান্ড!")
-
+        
