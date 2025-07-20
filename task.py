@@ -1,11 +1,14 @@
-# task.py
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import config
 import random
 
-# 🎮 Game Task
+# ✅ Utility: Ensure user exists
+def ensure_user(user_id):
+    if user_id not in config.USERS:
+        config.USERS[user_id] = {"coins": 0, "referrals": [], "ref_bonus": 0}
+
+# 🎮 Show Task Menu
 async def show_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -36,16 +39,19 @@ async def game_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     user_id = query.from_user.id
+    ensure_user(user_id)
+
     question = random.choice(questions)
     context.user_data["current_question"] = question
 
     await context.bot.send_message(
         chat_id=user_id,
-        text=f"🧠 প্রশ্ন: {question['q']}\nউত্তর দিন নিচে লিখে:",
+        text=f"🧠 প্রশ্ন: {question['q']}\nউত্তর দিন নিচে লিখে:"
     )
 
 async def handle_game_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    ensure_user(user_id)
     text = update.message.text.strip()
 
     if "current_question" not in context.user_data:
@@ -54,8 +60,10 @@ async def handle_game_answer(update: Update, context: ContextTypes.DEFAULT_TYPE)
     correct_answer = context.user_data["current_question"]["a"]
 
     if text == correct_answer:
-        config.USERS[user_id]["coins"] += config.GAME_REWARD
-        await update.message.reply_text(f"✅ সঠিক উত্তর! আপনি {config.GAME_REWARD} কয়েন পেলেন 🎉")
+        reward = config.GAME_REWARD
+        config.USERS[user_id]["coins"] += reward
+        await update.message.reply_text(f"✅ সঠিক উত্তর! আপনি {reward} কয়েন পেলেন 🎉")
+        add_referral_bonus(user_id, reward)
     else:
         await update.message.reply_text("❌ ভুল উত্তর! আবার চেষ্টা করুন।")
 
@@ -74,13 +82,16 @@ async def video_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
+    ensure_user(user_id)
 
     links = "\n".join([f"🎥 {i+1}. {link}" for i, link in enumerate(video_links)])
-    config.USERS[user_id]["coins"] += config.VIDEO_REWARD * len(video_links)
+    reward = config.VIDEO_REWARD * len(video_links)
+    config.USERS[user_id]["coins"] += reward
 
     await query.edit_message_text(
-        text=f"{links}\n\n✅ ভিডিওগুলো দেখে আপনি {config.VIDEO_REWARD * len(video_links)} কয়েন পেয়েছেন!"
+        text=f"{links}\n\n✅ ভিডিওগুলো দেখে আপনি {reward} কয়েন পেয়েছেন!"
     )
+    add_referral_bonus(user_id, reward)
 
 # 👥 Refer & Earn
 async def refer_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,6 +99,7 @@ async def refer_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user = query.from_user
     user_id = user.id
+    ensure_user(user_id)
 
     refer_link = f"https://t.me/{config.BOT_USERNAME}?start={user_id}"
     total_refers = len(config.USERS[user_id].get("referrals", []))
@@ -107,20 +119,12 @@ async def refer_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🏠 মেইন মেনু", callback_data="open_menu")]
         ])
     )
-    
+
+# 🔁 Referral Bonus System
 def add_referral_bonus(user_id, coin_amount):
-    for uid, data in config.USERS.items():
-        if user_id in data["referrals"]:
+    for referrer_id, data in config.USERS.items():
+        if user_id in data.get("referrals", []):
             bonus = int(coin_amount * config.REFER_PERCENT)
             data["coins"] += bonus
-add_referral_bonus(user_id, coin_amount)
-# যেখানেই ইউজার ইনকাম করে, নিচের কোডটা যোগ করো
-income = 5  # ইউজার ইনকাম করল 5 coin
-config.USERS[user_id]["coins"] += income
-
-# রেফারার থাকলে তাকে 10% বোনাস দাও
-for referrer_id, data in config.USERS.items():
-    if user_id in data.get("referrals", []):
-        bonus = int(income * 0.1)
-        data["coins"] += bonus
-        data["ref_bonus"] = data.get("ref_bonus", 0) + bonus
+            data["ref_bonus"] = data.get("ref_bonus", 0) + bonus
+            
