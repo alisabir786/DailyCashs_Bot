@@ -1,6 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 import config
+from data_manager import save_users  # ✅ যুক্ত করেছি
 
 async def show_daily_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -22,9 +23,11 @@ async def show_daily_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # Get reward from config
     reward = config.DAILY_REWARD[day]
 
-    # Update user's coin and daily_day
+    # ✅ Update user's coin and day
     user_data["coins"] += reward
     user_data["daily_day"] = day + 1
+
+    save_users(config.USERS)  # ✅ এখানেই সেভ করে ফেললাম
 
     # Prepare check-in status list
     checkmarks = ["✅" if i < user_data["daily_day"] else "🔓" for i in range(7)]
