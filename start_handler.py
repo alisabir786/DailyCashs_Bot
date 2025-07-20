@@ -1,6 +1,8 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import config
+from data_manager import save_users  # ✅ এখানেই import করতে হবে
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -33,6 +35,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 config.USERS[referrer_id]["referrals"].append(user.id)
                 config.USERS[referrer_id]["coins"] += config.REFER_REWARD
                 config.USERS[referrer_id]["ref_bonus"] += config.REFER_REWARD
+
+        # ✅ নতুন ইউজার রেজিস্ট্রেশনের পর ডেটা সেভ
+        save_users(config.USERS)
 
     # Welcome টেক্সট
     welcome_text = (
