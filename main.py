@@ -96,3 +96,6 @@ app.add_handler(MessageHandler(filters.PHOTO, save_photo))
 from message_handler import handle_text
 
 app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text))
+from admin_handler import admin_panel
+
+app.add_handler(CommandHandler("panel", admin_panel))
