@@ -46,3 +46,4 @@ elif data == "video_task":
     await video_task(update, context)
 elif data == "refer_task":
     await refer_task(update, context)
+[InlineKeyboardButton("👥 Refer & Earn", callback_data="referral")]
