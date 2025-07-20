@@ -26,7 +26,6 @@ def get_main_menu():
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     data = query.data
 
     # 🏠 Back to Main Menu
