@@ -77,3 +77,6 @@ app.add_handler(profile_conv)
 app.add_handler(CallbackQueryHandler(show_profile, pattern="^profile$"))
 app.add_handler(CallbackQueryHandler(show_privacy, pattern="^privacy$"))
 app.add_handler(CallbackQueryHandler(show_about, pattern="^about$"))
+from referral import show_referral
+
+app.add_handler(CallbackQueryHandler(show_referral, pattern="^referral$"))
