@@ -2,11 +2,12 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import config
 import re
+from data_manager import save_users  # ✅ Save function import
 
 # Dictionary to track withdrawal state
 user_withdraw_state = {}
 
-# Withdraw options moved to config.py ideally
+# Withdraw options (can move to config.py)
 withdraw_options = {
     "100": 2000,
     "300": 6000,
@@ -36,6 +37,7 @@ async def show_withdrawal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.message.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
 
+
 # 💳 Handle Option Selection
 async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -52,13 +54,12 @@ async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFA
         await query.answer("❌ Invalid amount selected!", show_alert=True)
         return
 
-    required_coins = withdraw_options.get(amount)
+    required_coins = withdraw_options[amount]
 
     if coins < required_coins:
         await query.answer("❌ Not enough coins!", show_alert=True)
         return
 
-    # Store state
     user_withdraw_state[user_id] = {
         "amount": amount,
         "required": required_coins
@@ -69,6 +70,7 @@ async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFA
         "💡 Please send your <b>UPI ID</b>:",
         parse_mode="HTML"
     )
+
 
 # 🏦 Handle UPI Input
 async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -92,10 +94,10 @@ async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_withdraw_state.pop(user_id, None)
         return
 
-    # Deduct coins
+    # ✅ Deduct coins
     config.USERS[user_id]["coins"] -= required
 
-    # Save withdrawal request
+    # ✅ Save withdrawal info
     if "withdrawals" not in config.USERS[user_id]:
         config.USERS[user_id]["withdrawals"] = []
 
@@ -104,12 +106,14 @@ async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "upi": message
     })
 
-    # Optional: store last request separately
     config.USERS[user_id]["withdraw_request"] = {
         "coin": required,
         "amount": amount,
         "upi": message
     }
+
+    # ✅ Save updated data
+    save_users(config.USERS)
 
     user_withdraw_state.pop(user_id, None)
 
@@ -117,13 +121,16 @@ async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ Withdrawal of ₹{amount} successful!\n⏳ Please wait 24 hours for processing."
     )
 
-    # 🔔 Notify Admin
+    # 🔔 Notify Admin (if OWNER_ID set)
     if hasattr(config, "OWNER_ID"):
         try:
             await context.bot.send_message(
                 chat_id=config.OWNER_ID,
-                text=f"📥 <b>New Withdrawal Request</b>\n👤 User: <code>{user_id}</code>\n💸 Amount: ₹{amount}\n🏦 UPI: <code>{message}</code>",
+                text=f"📥 <b>New Withdrawal Request</b>\n"
+                     f"👤 User: <code>{user_id}</code>\n"
+                     f"💸 Amount: ₹{amount}\n"
+                     f"🏦 UPI: <code>{message}</code>",
                 parse_mode="HTML"
             )
         except:
-            pass  # ignore admin error
+            pass
