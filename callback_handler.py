@@ -12,7 +12,7 @@ def get_main_menu():
         [InlineKeyboardButton("🎯 Spin", callback_data="spin")],
         [InlineKeyboardButton("🧩 Task", callback_data="task")],
         [InlineKeyboardButton("⚙️ Settings", callback_data="profile_settings")],
-        [InlineKeyboardButton("💵 Withdraw", callback_data="withdraw")]
+        
     ])
 
 # Callback Menu Handler
