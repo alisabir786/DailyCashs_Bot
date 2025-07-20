@@ -1,20 +1,26 @@
-# config.py
-
+import os
+from dotenv import load_dotenv
 from data_manager import load_users
 
-BOT_TOKEN = "7577689328:AAFCR1sewFUYRkmm2zNUKACjeOTQa1ZiC3o"
-OWNER_ID = 6955653010
-BOT_USERNAME = "@Sabirdigital"
+# Load .env file
+load_dotenv()
 
-DAILY_REWARD = [10, 15, 20, 25, 30, 35, 50]
-SPIN_REWARDS = [0, 10, 20, 50, 100]
-GAME_REWARD = 20
-VIDEO_REWARD = 15
-REFER_REWARD = 10
-REFER_PERCENT = 0.1
+# ✅ Load all variables from .env
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID"))
+BOT_USERNAME = os.getenv("BOT_USERNAME")
 
-MIN_WITHDRAWAL = 2000
-COIN_TO_TAKA = 20  # 2000 coin = 100 টাকা
-WITHDRAW_OPTIONS = [2000, 3000, 5000]
+DAILY_REWARD = list(map(int, os.getenv("DAILY_REWARD").split(",")))
+SPIN_REWARDS = list(map(int, os.getenv("SPIN_REWARDS").split(",")))
 
+GAME_REWARD = int(os.getenv("GAME_REWARD"))
+VIDEO_REWARD = int(os.getenv("VIDEO_REWARD"))
+REFER_REWARD = int(os.getenv("REFER_REWARD"))
+REFER_PERCENT = float(os.getenv("REFER_PERCENT"))
+
+MIN_WITHDRAWAL = int(os.getenv("MIN_WITHDRAWAL"))
+COIN_TO_TAKA = int(os.getenv("COIN_TO_TAKA"))
+WITHDRAW_OPTIONS = list(map(int, os.getenv("WITHDRAW_OPTIONS").split(",")))
+
+# ✅ Load users from file
 USERS = load_users()
