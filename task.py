@@ -114,3 +114,13 @@ def add_referral_bonus(user_id, coin_amount):
             bonus = int(coin_amount * config.REFER_PERCENT)
             data["coins"] += bonus
 add_referral_bonus(user_id, coin_amount)
+# যেখানেই ইউজার ইনকাম করে, নিচের কোডটা যোগ করো
+income = 5  # ইউজার ইনকাম করল 5 coin
+config.USERS[user_id]["coins"] += income
+
+# রেফারার থাকলে তাকে 10% বোনাস দাও
+for referrer_id, data in config.USERS.items():
+    if user_id in data.get("referrals", []):
+        bonus = int(income * 0.1)
+        data["coins"] += bonus
+        data["ref_bonus"] = data.get("ref_bonus", 0) + bonus
