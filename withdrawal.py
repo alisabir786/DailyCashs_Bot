@@ -1,108 +1,128 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler
+from telegram.ext import ContextTypes
 import config
-import re
-from data_manager import save_users
 
-# --- Conversation States ---
+# ✅ Withdrawal states
 AWAITING_UPI, AWAITING_AMOUNT = range(2)
 
-# Dictionary to hold withdrawal states
-user_withdraw_state = {}
-
-# Withdrawal Options (Coin Needed)
-withdraw_options = {
-    "100": 2000,
-    "300": 6000,
-    "500": 10000,
-    "1000": 20000
-}
-
-# --- Menu Button to Start Withdrawal ---
+# ✅ Show Withdrawal Menu
 async def show_withdrawal_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+
     keyboard = [
-        [InlineKeyboardButton("₹100", callback_data="withdraw_100"),
-         InlineKeyboardButton("₹300", callback_data="withdraw_300")],
-        [InlineKeyboardButton("₹500", callback_data="withdraw_500"),
-         InlineKeyboardButton("₹1000", callback_data="withdraw_1000")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="open_menu")]
+        [InlineKeyboardButton("₹100 = 2000 Coins", callback_data="withdraw_10")],
+        [InlineKeyboardButton("₹200 = 4000 Coins", callback_data="withdraw_20")],
+        [InlineKeyboardButton("₹300 = 6000 Coins", callback_data="withdraw_30")],
+        [InlineKeyboardButton("Back", callback_data="menu")]
     ]
-    await query.message.edit_text("🔢 Select withdrawal amount:", reply_markup=InlineKeyboardMarkup(keyboard))
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text("💸 Select withdrawal amount:", reply_markup=reply_markup)
     return AWAITING_AMOUNT
 
-# --- Handle Selection (Amount Button) ---
-async def process_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ✅ Handle withdrawal amount selection
+async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    user_id = query.from_user.id
     await query.answer()
 
-    amount = query.data.split("_")[1]
-    required_coins = withdraw_options.get(amount)
+    user_id = query.from_user.id
+    data = query.data
 
-    if config.USERS[user_id]["coins"] < required_coins:
-        await query.message.edit_text("❌ Not enough coins to withdraw this amount.")
-        return ConversationHandler.END
+    if not data.startswith("withdraw_"):
+        await query.answer("❌ Invalid selection.")
+        return
 
-    user_withdraw_state[user_id] = {"amount": amount, "required": required_coins}
-    await query.message.edit_text("💡 Please send your UPI ID to complete withdrawal.")
+    amount = int(data.split("_")[1])
+    coins_required = int((amount / config.COIN_TO_TAKA) * config.MIN_WITHDRAWAL)
+
+    user_data = config.USERS.get(user_id, {"coins": 0})
+    coins = user_data.get("coins", 0)
+
+    if coins < coins_required:
+        await query.edit_message_text(
+            text=f"❌ You need {coins_required} coins to withdraw ₹{amount}.\nYour balance: {coins} coins."
+        )
+        return
+
+    context.user_data["withdraw_amount"] = amount
+    await query.edit_message_text("💳 Please enter your UPI ID to proceed:")
     return AWAITING_UPI
 
-# --- Handle UPI ID Input ---
+# ✅ Get UPI ID from user
 async def get_upi_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    upi = update.message.text.strip()
+    upi_id = update.message.text.strip()
 
-    if not re.match(r"^[\w.\-]{2,}@[a-zA-Z]{2,}$", upi):
-        await update.message.reply_text("❌ Invalid UPI format. Example: `yourname@upi`")
+    if "@" not in upi_id:
+        await update.message.reply_text("❌ Invalid UPI ID. Please enter again:")
         return AWAITING_UPI
 
-    if user_id not in user_withdraw_state:
-        await update.message.reply_text("❌ No active withdrawal session.")
+    context.user_data["upi_id"] = upi_id
+    amount = context.user_data.get("withdraw_amount")
+
+    coins_required = int((amount / config.COIN_TO_TAKA) * config.MIN_WITHDRAWAL)
+    user_data = config.USERS.get(user_id, {"coins": 0})
+
+    if user_data["coins"] < coins_required:
+        await update.message.reply_text("❌ Insufficient coins.")
         return ConversationHandler.END
 
-    data = user_withdraw_state.pop(user_id)
-    amount = data["amount"]
-    required = data["required"]
-
-    config.USERS[user_id]["coins"] -= required
-
-    # Save request
-    config.USERS[user_id].setdefault("withdrawals", []).append({
+    # Deduct coins and record
+    user_data["coins"] -= coins_required
+    user_data.setdefault("withdrawals", []).append({
         "amount": amount,
-        "upi": upi
+        "upi_id": upi_id
     })
-    save_users(config.USERS)
+    config.USERS[user_id] = user_data
 
-    await update.message.reply_text(f"✅ Withdrawal of ₹{amount} requested.\n⏳ Wait 24 hours.")
+    await update.message.reply_text(
+        f"✅ Withdrawal request for ₹{amount} received!\nUPI: `{upi_id}`\n\n⏳ It will be processed soon.",
+        parse_mode="Markdown"
+    )
 
     # Notify Admin
+    owner_id = int(config.OWNER_ID)
     try:
         await context.bot.send_message(
-            chat_id=config.OWNER_ID,
-            text=f"📥 New Withdrawal\n👤 User ID: <code>{user_id}</code>\n💸 ₹{amount}\n🏦 UPI: <code>{upi}</code>",
-            parse_mode="HTML"
+            chat_id=owner_id,
+            text=f"💰 New Withdrawal Request\n\nUser: [{update.effective_user.first_name}](tg://user?id={user_id})\nAmount: ₹{amount}\nUPI: `{upi_id}`\nBalance Left: {user_data['coins']} coins",
+            parse_mode="Markdown"
         )
     except:
         pass
 
     return ConversationHandler.END
 
-# --- Static fallback (Menu) if called directly ---
+# ✅ Show current withdrawal info
 async def show_withdrawal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
-    coins = config.USERS[user_id]["coins"]
+    user_data = config.USERS.get(user_id, {"coins": 0})
 
-    text = (
-        f"💰 Total Coins: {coins} Coin\n"
-        f"🧾 2000 Coin = ₹100\n"
-        f"🔢 Click below to withdraw:"
+    coins = user_data.get("coins", 0)
+    taka = coins // config.COIN_TO_TAKA
+    can_withdraw = "✅ Yes" if coins >= config.MIN_WITHDRAWAL else "❌ Not Yet"
+
+    await query.answer()
+    await query.edit_message_text(
+        text=(
+            f"💰 Withdrawal Info:\n\n"
+            f"Coins: {coins} 🪙\n"
+            f"Estimated ₹: {taka}\n"
+            f"Eligible for Withdrawal: {can_withdraw}\n\n"
+            f"➡️ Minimum {config.MIN_WITHDRAWAL} coins required for withdrawal.\n"
+            f"Select 'Withdraw' to proceed."
+        ),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Withdraw Now", callback_data="withdraw")],
+            [InlineKeyboardButton("Back", callback_data="menu")]
+        ])
     )
-    buttons = [
-        [InlineKeyboardButton("💳 Withdraw", callback_data="withdraw")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="open_menu")]
-    ]
-    await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons))
-    
+
+# ✅ Handle UPI fallback
+async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if "@" in text:
+        return await get_upi_id(update, context)
+    else:
+        return await handle_text(update, context)  # From message_handler
