@@ -31,3 +31,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("▶️ Play", callback_data="open_menu")]
         ])
     )
+from referral import add_referral
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+
+    # নতুন ইউজার রেজিস্টার
+    if user.id not in config.USERS:
+        config.USERS[user.id] = {
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "coins": 0,
+            "daily_day": 0,
+            "referrals": [],
+            "profile_photo": None
+        }
+
+        # রেফার সিস্টেম
+        if context.args:
+            referrer_id = int(context.args[0])
+            add_referral(user.id, referrer_id)
+
+    # বাকি Welcome মেসেজ আগের মতোই থাকবে
+    
