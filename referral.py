@@ -1,17 +1,16 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+# referral.py
+
 import config
 
-async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    user_data = config.USERS.get(user.id)
+def add_referral(new_user_id, referrer_id):
+    if new_user_id == referrer_id:
+        return  # Self-referral বাদ
 
-    if not user_data:
-        return await update.message.reply_text("❌ ইউজার ডেটা পাওয়া যায়নি!")
+    if referrer_id not in config.USERS:
+        return  # রেফারার সিস্টেমে না থাকলে কিছু না করো
 
-    refer_link = f"https://t.me/{config.BOT_USERNAME}?start={user.id}"
-    await update.message.reply_text(
-        f"🔗 আপনার রেফারেল লিংক:\n{refer_link}\n\n"
-        f"👥 রেফার সংখ্যা: {len(user_data['referrals'])}\n"
-        f"🎁 প্রতি রেফারে ইনকাম: {config.REFER_REWARD} কয়েন"
-    )
+    if new_user_id in config.USERS[referrer_id]["referrals"]:
+        return  # ডুপ্লিকেট রেফার না
+
+    config.USERS[referrer_id]["referrals"].append(new_user_id)
+    config.USERS[referrer_id]["coins"] += config.REFER_REWARD
