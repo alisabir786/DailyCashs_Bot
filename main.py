@@ -85,3 +85,11 @@ from withdrawal import show_withdrawal, handle_withdrawal_selection, handle_upi_
 app.add_handler(CallbackQueryHandler(show_withdrawal, pattern="^withdrawal$"))
 app.add_handler(CallbackQueryHandler(handle_withdrawal_selection, pattern="^withdraw_"))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_upi_input))
+from profile import show_profile, ask_name, save_name, ask_photo, save_photo
+
+app.add_handler(CallbackQueryHandler(show_profile, pattern="^profile$"))
+app.add_handler(CallbackQueryHandler(ask_name, pattern="^change_name$"))
+app.add_handler(CallbackQueryHandler(ask_photo, pattern="^upload_photo$"))
+
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, save_name))
+app.add_handler(MessageHandler(filters.PHOTO, save_photo))
