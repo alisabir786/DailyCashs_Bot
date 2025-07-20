@@ -66,10 +66,10 @@ def run_bot():
     app.add_handler(CallbackQueryHandler(show_withdrawal, pattern="^withdrawal$"))
     app.add_handler(CallbackQueryHandler(handle_withdrawal_selection, pattern="^withdraw_"))
 
-    # ✅ Fallback Text / UPI Handler
+    # ✅ Fallback Text & Media Handlers
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_upi_input))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    app.add_handler(MessageHandler(filters.PHOTO, save_photo))  # profile photo update fallback
+    app.add_handler(MessageHandler(filters.PHOTO, save_photo))  # Profile photo update fallback
 
     # ✅ Admin Panel
     app.add_handler(CommandHandler("panel", admin_panel))
