@@ -2,6 +2,11 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from config import BOT_TOKEN
 from start_handler import start
 from callback_handler import callback_handler
+from telegram.ext import MessageHandler, filters
+from task import handle_game_answer
+
+app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_game_answer))
+
 
 def run_bot():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -14,6 +19,7 @@ def run_bot():
 
 if __name__ == "__main__":
     run_bot()
+
 # Add in your callback_handler
 elif data == "wallet":
     await show_wallet(update, context)
@@ -25,4 +31,11 @@ elif data == "daily_checkin":
     await show_spin(update, context)
 elif data == "do_spin":
     await do_spin(update, context)
-
+elif data == "task":
+    await show_task(update, context)
+elif data == "game_task":
+    await game_task(update, context)
+elif data == "video_task":
+    await video_task(update, context)
+elif data == "refer_task":
+    await refer_task(update, context)
