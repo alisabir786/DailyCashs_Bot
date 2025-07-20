@@ -39,3 +39,17 @@ elif data == "video_task":
     await video_task(update, context)
 elif data == "refer_task":
     await refer_task(update, context)
+from withdrawal import show_withdrawal_menu, get_upi_id, process_withdraw, AWAITING_UPI, AWAITING_AMOUNT
+from telegram.ext import ConversationHandler, MessageHandler, filters
+
+withdraw_conv = ConversationHandler(
+    entry_points=[CallbackQueryHandler(show_withdrawal_menu, pattern="^withdraw$")],
+    states={
+        AWAITING_UPI: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_upi_id)],
+        AWAITING_AMOUNT: [CallbackQueryHandler(process_withdraw, pattern="^withdraw_")]
+    },
+    fallbacks=[]
+)
+
+app.add_handler(withdraw_conv)
+
