@@ -19,3 +19,4 @@ REFER_PERCENT = float(os.getenv("REFER_PERCENT"))
 MIN_WITHDRAWAL = int(os.getenv("MIN_WITHDRAWAL"))
 COIN_TO_TAKA = int(os.getenv("COIN_TO_TAKA"))
 WITHDRAW_OPTIONS = list(map(int, os.getenv("WITHDRAW_OPTIONS").split(",")))
+COINS_PER_1_INR = 20  # 2000 coin = ₹100
