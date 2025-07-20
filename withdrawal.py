@@ -1,6 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 import config
+from message_handler import handle_text
 
 # ✅ Withdrawal states
 AWAITING_UPI, AWAITING_AMOUNT = range(2)
@@ -19,6 +20,12 @@ async def show_withdrawal_menu(update: Update, context: ContextTypes.DEFAULT_TYP
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text("💸 Select withdrawal amount:", reply_markup=reply_markup)
     return AWAITING_AMOUNT
+
+# ✅ Process Withdraw (Conversation handler needs this wrapper)
+async def process_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    return await handle_withdrawal_selection(update, context)
 
 # ✅ Handle withdrawal amount selection
 async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,7 +49,7 @@ async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFA
         await query.edit_message_text(
             text=f"❌ You need {coins_required} coins to withdraw ₹{amount}.\nYour balance: {coins} coins."
         )
-        return
+        return ConversationHandler.END
 
     context.user_data["withdraw_amount"] = amount
     await query.edit_message_text("💳 Please enter your UPI ID to proceed:")
@@ -59,8 +66,8 @@ async def get_upi_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["upi_id"] = upi_id
     amount = context.user_data.get("withdraw_amount")
-
     coins_required = int((amount / config.COIN_TO_TAKA) * config.MIN_WITHDRAWAL)
+
     user_data = config.USERS.get(user_id, {"coins": 0})
 
     if user_data["coins"] < coins_required:
@@ -119,10 +126,11 @@ async def show_withdrawal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
     )
 
-# ✅ Handle UPI fallback
+# ✅ Fallback: Handle UPI input if outside conversation
 async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if "@" in text:
         return await get_upi_id(update, context)
     else:
-        return await handle_text(update, context)  # From message_handler
+        return await handle_text(update, context)
+        
