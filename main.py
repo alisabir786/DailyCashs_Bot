@@ -26,14 +26,14 @@ from admin_handler import admin_panel
 def run_bot():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 🔹 Start and Callback
+    # ✅ Start & Main Callback
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(callback_handler))
 
-    # 🔹 Game Task Answer
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_game_answer))
+    # ✅ Game Answer (Free Text)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_game_answer))
 
-    # 🔹 Withdrawal Conversation
+    # ✅ Withdrawal Conversation
     withdraw_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(show_withdrawal_menu, pattern="^withdraw$")],
         states={
@@ -44,7 +44,7 @@ def run_bot():
     )
     app.add_handler(withdraw_conv)
 
-    # 🔹 Profile Conversation
+    # ✅ Profile Conversation
     profile_conv = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(ask_name, pattern="^edit_name$"),
@@ -58,7 +58,7 @@ def run_bot():
     )
     app.add_handler(profile_conv)
 
-    # 🔹 Static Callback Buttons
+    # ✅ Static Buttons
     app.add_handler(CallbackQueryHandler(show_profile, pattern="^profile$"))
     app.add_handler(CallbackQueryHandler(show_privacy, pattern="^privacy$"))
     app.add_handler(CallbackQueryHandler(show_about, pattern="^about$"))
@@ -66,12 +66,12 @@ def run_bot():
     app.add_handler(CallbackQueryHandler(show_withdrawal, pattern="^withdrawal$"))
     app.add_handler(CallbackQueryHandler(handle_withdrawal_selection, pattern="^withdraw_"))
 
-    # 🔹 Fallback message handlers
+    # ✅ Fallback Text / UPI Handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_upi_input))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    app.add_handler(MessageHandler(filters.PHOTO, save_photo))
+    app.add_handler(MessageHandler(filters.PHOTO, save_photo))  # profile photo update fallback
 
-    # 🔹 Admin
+    # ✅ Admin Panel
     app.add_handler(CommandHandler("panel", admin_panel))
 
     print("✅ Bot is running...")
