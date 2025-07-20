@@ -1,47 +1,35 @@
 # daily_checkin.py
-
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import ContextTypes
 import config
 
-# ৭ দিনের রিওয়ার্ড
-DAY_REWARDS = [4, 8, 16, 32, 72, 90, 120]
-
-# 🔙 Back to Menu বাটন
-BACK_BUTTON = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🔙 Back to Menu", callback_data="open_menu")]
-])
-
 async def show_daily_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
-    user_data = config.USERS.get(user.id)
-
-    if not user_data:
-        await context.bot.send_message(chat_id, "❌ ইউজার ডেটা পাওয়া যায়নি!")
-        return
-
+    query = update.callback_query
+    user_id = query.from_user.id
+    user_data = config.USERS.get(user_id, {})
     day = user_data.get("daily_day", 0)
 
     if day >= 7:
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="✅ আপনি ৭ দিনের চেক-ইন শেষ করেছেন! আগামীকাল আবার শুরু করুন।",
-            reply_markup=BACK_BUTTON
-        )
+        await query.edit_message_text("✅ আপনি এই সপ্তাহে সব চেক-ইন সম্পন্ন করেছেন!")
         return
 
-    coins = DAY_REWARDS[day]
-    user_data["coins"] += coins
+    reward = config.DAILY_REWARD[day]
+    user_data["coins"] += reward
     user_data["daily_day"] += 1
 
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text=(
-            f"📅 Day {day+1} Check-in Complete!\n"
-            f"🎁 আপনি পেয়েছেন: {coins} কয়েন 🪙\n"
-            f"💰 মোট কয়েন: {user_data['coins']} 🪙"
-        ),
-        reply_markup=BACK_BUTTON
+    checkmarks = ["✅" if i < user_data["daily_day"] else "🔓" for i in range(7)]
+
+    text = (
+        "📅 ডেইলি চেক-ইন:\n\n"
+        f"১ম দিন - 4 🪙 {checkmarks[0]}\n"
+        f"২য় দিন - 8 🪙 {checkmarks[1]}\n"
+        f"৩য় দিন - 16 🪙 {checkmarks[2]}\n"
+        f"৪র্থ দিন - 32 🪙 {checkmarks[3]}\n"
+        f"৫ম দিন - 72 🪙 {checkmarks[4]}\n"
+        f"৬ষ্ঠ দিন - 90 🪙 {checkmarks[5]}\n"
+        f"৭ম দিন - 120 🪙 {checkmarks[6]}\n\n"
+        f"🎉 আজ আপনি পেয়েছেন {reward} কয়েন!"
     )
+
+    await query.edit_message_text(text=text)
     
