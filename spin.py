@@ -2,8 +2,9 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import random
 import config
+from data_manager import save_users  # ✅ যুক্ত করা হয়েছে
 
-# ✅ স্পিন দেখানো ফাংশন
+# ✅ স্পিন দেখানোর ফাংশন
 async def show_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -42,6 +43,9 @@ async def do_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             bonus = int(reward * config.REFER_PERCENT)
             data["coins"] += bonus
             data["ref_bonus"] = data.get("ref_bonus", 0) + bonus
+
+    # ✅ সেভ করে দাও
+    save_users(config.USERS)
 
     # 🎉 রেজাল্ট মেসেজ
     await query.edit_message_text(
