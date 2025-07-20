@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import config
 import random
+from data_manager import save_users  # ✅ ফাইলের শুরুতে
 
 # ✅ Utility: Ensure user exists
 def ensure_user(user_id):
@@ -62,8 +63,9 @@ async def handle_game_answer(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if text == correct_answer:
         reward = config.GAME_REWARD
         config.USERS[user_id]["coins"] += reward
-        await update.message.reply_text(f"✅ সঠিক উত্তর! আপনি {reward} কয়েন পেলেন 🎉")
         add_referral_bonus(user_id, reward)
+        save_users(config.USERS)  # ✅ সেভ করা হয়েছে
+        await update.message.reply_text(f"✅ সঠিক উত্তর! আপনি {reward} কয়েন পেলেন 🎉")
     else:
         await update.message.reply_text("❌ ভুল উত্তর! আবার চেষ্টা করুন।")
 
@@ -87,11 +89,12 @@ async def video_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     links = "\n".join([f"🎥 {i+1}. {link}" for i, link in enumerate(video_links)])
     reward = config.VIDEO_REWARD * len(video_links)
     config.USERS[user_id]["coins"] += reward
+    add_referral_bonus(user_id, reward)
+    save_users(config.USERS)  # ✅ সেভ করা হয়েছে
 
     await query.edit_message_text(
         text=f"{links}\n\n✅ ভিডিওগুলো দেখে আপনি {reward} কয়েন পেয়েছেন!"
     )
-    add_referral_bonus(user_id, reward)
 
 # 👥 Refer & Earn
 async def refer_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
