@@ -80,3 +80,8 @@ app.add_handler(CallbackQueryHandler(show_about, pattern="^about$"))
 from referral import show_referral
 
 app.add_handler(CallbackQueryHandler(show_referral, pattern="^referral$"))
+from withdrawal import show_withdrawal, handle_withdrawal_selection, handle_upi_input
+
+app.add_handler(CallbackQueryHandler(show_withdrawal, pattern="^withdrawal$"))
+app.add_handler(CallbackQueryHandler(handle_withdrawal_selection, pattern="^withdraw_"))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_upi_input))
