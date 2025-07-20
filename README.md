@@ -32,3 +32,16 @@ A complete earning-style Telegram bot like an Android earning app. Users can ear
 ```bash
 git clone https://github.com/yourusername/DailyCashs_Bot.git
 cd DailyCashs_Bot
+
+## 🙋 Admin Access
+
+Use `/panel` command in bot to view admin features and control.
+
+## 🧾 License
+
+MIT License — free to use, modify and distribute.
+
+## 🧑‍💻 Author
+
+- 👤 Telegram: [@Sabirdigital](https://t.me/Sabirdigital)
+- 🔗 Bot: [@DailyCashs_Bot](https://t.me/DailyCashs_Bot)
