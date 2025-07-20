@@ -38,3 +38,11 @@ elif data == "spin":
     await show_spin(update, context)
 elif data == "do_spin":
     await do_spin(update, context)
+elif data == "task":
+    await show_task(update, context)
+elif data == "game_task":
+    await game_task(update, context)
+elif data == "video_task":
+    await video_task(update, context)
+elif data == "refer_task":
+    await refer_task(update, context)
