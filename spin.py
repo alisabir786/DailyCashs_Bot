@@ -1,40 +1,49 @@
-# spin.py
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import random
 import config
 
+# ✅ স্পিন দেখানো ফাংশন
 async def show_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     user_id = query.from_user.id
 
-    # Task/Ad simulation
+    # 🧩 Task/Ad Simulation
     await query.edit_message_text(
-        text="🧩 স্পিন করার আগে একটি টাস্ক কমপ্লিট করুন (যেমন: অ্যাড দেখুন)... ✅",
+        text="🧩 স্পিন করার আগে একটি টাস্ক কমপ্লিট করুন (যেমন: অ্যাড দেখুন)... ✅"
     )
 
-    # Show spin button
-    await context.bot.send_message(
+    # 🎯 স্পিন ইমেজ সহ মেসেজ
+    await context.bot.send_photo(
         chat_id=user_id,
-        text="🎯 স্পিন করুন এবং 0-100 কয়েন জিতুন!",
+        photo="https://i.ibb.co/7PgkQ0d",  # ✅ স্পিন ইমেজ
+        caption="🎯 স্পিন করে কয়েন জিতুন!",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🎡 Spin Now", callback_data="do_spin")]
         ])
     )
 
+# ✅ স্পিন কার্যকর করার ফাংশন
 async def do_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     user_id = query.from_user.id
 
-    # স্পিন রিওয়ার্ড র‍্যান্ডম বাছাই
+    # 🎰 র‍্যান্ডম রিওয়ার্ড বাছাই
     reward = random.choice(config.SPIN_REWARDS)
     config.USERS[user_id]["coins"] += reward
 
+    # 🪙 রেফার বোনাস গণনা ও অ্যাড
+    for referrer_id, data in config.USERS.items():
+        if user_id in data.get("referrals", []):
+            bonus = int(reward * config.REFER_PERCENT)
+            data["coins"] += bonus
+            data["ref_bonus"] = data.get("ref_bonus", 0) + bonus
+
+    # 🎉 রেজাল্ট মেসেজ
     await query.edit_message_text(
         text=f"🎉 আপনি স্পিন করে {reward} 🪙 কয়েন পেয়েছেন!\n\n💰 Wallet: {config.USERS[user_id]['coins']} 🪙",
         reply_markup=InlineKeyboardMarkup([
@@ -42,19 +51,4 @@ async def do_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🏠 মেইন মেনু", callback_data="open_menu")]
         ])
     )
-def add_referral_bonus(user_id, coin_amount):
-    for uid, data in config.USERS.items():
-        if user_id in data["referrals"]:
-            bonus = int(coin_amount * config.REFER_PERCENT)
-            data["coins"] += bonus
-add_referral_bonus(user_id, coin_amount)
-# যেখানেই ইউজার ইনকাম করে, নিচের কোডটা যোগ করো
-income = 5  # ইউজার ইনকাম করল 5 coin
-config.USERS[user_id]["coins"] += income
-
-# রেফারার থাকলে তাকে 10% বোনাস দাও
-for referrer_id, data in config.USERS.items():
-    if user_id in data.get("referrals", []):
-        bonus = int(income * 0.1)
-        data["coins"] += bonus
-        data["ref_bonus"] = data.get("ref_bonus", 0) + bonus
+    
