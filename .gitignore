@@ -1,30 +1,4 @@
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environment
-env/
-venv/
-.venv/
-
-# VSCode settings
-.vscode/
-
-# MacOS system files
-.DS_Store
-
-# Log files
-*.log
-
-# dotenv file (contains secrets like BOT_TOKEN)
 .env
-
-# Telegram bot session or temp files
-*.session
-*.sqlite
-
-# PyInstaller
-build/
-dist/
-*.spec
+__pycache__/
+*.pyc
+.DS_Store
