@@ -1,58 +1,22 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
-import config
-from data_manager import save_users  # ✅ এখানেই import করতে হবে
+``python
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from data_manager import get_user
 
+@Client.on_message(filters.command("start"))
+async def start(_, message):
+    user = get_user(message.from_user.id)
+    await message.reply_photo(
+        photo="https://telegra.ph/file/277f89e97b6eede112c58.png",  # Custom welcome image
+        caption=f"""
+👋 স্বাগতম {message.from_user.first_name}!
+🎮 খেলুন Spin, Task, Check-in করে আয় করুন।
+💰 অটো কয়েন Wallet-এ জমা হবে।
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
-
-    # রেফারার আইডি খুঁজে বের করা (যদি থাকে)
-    referrer_id = None
-    if context.args:
-        try:
-            referrer_id = int(context.args[0])
-        except:
-            referrer_id = None
-
-    # ইউজার নতুন কিনা চেক
-    if user.id not in config.USERS:
-        config.USERS[user.id] = {
-            "first_name": user.first_name or "",
-            "last_name": user.last_name or "",
-            "username": user.username or "",
-            "coins": 0,
-            "daily_day": 0,
-            "referrals": [],
-            "ref_bonus": 0,
-            "profile_photo": None
-        }
-
-        # রেফারেল যুক্তি (নিজেকে রেফার করতে না পারে)
-        if referrer_id and referrer_id != user.id and referrer_id in config.USERS:
-            if user.id not in config.USERS[referrer_id]["referrals"]:
-                config.USERS[referrer_id]["referrals"].append(user.id)
-                config.USERS[referrer_id]["coins"] += config.REFER_REWARD
-                config.USERS[referrer_id]["ref_bonus"] += config.REFER_REWARD
-
-        # ✅ নতুন ইউজার রেজিস্ট্রেশনের পর ডেটা সেভ
-        save_users(config.USERS)
-
-    # Welcome টেক্সট
-    welcome_text = (
-        f"👋 হ্যালো {user.first_name or 'বন্ধু'}!\n\n"
-        "🎮 গেম খেলে, স্পিন করে, টাস্ক কমপ্লিট করে ইনকাম করুন!\n\n"
-        "👇 শুরু করতে নিচের Play বাটনে ক্লিক করুন:"
+👇 শুরু করতে PLAY চাপুন:
+        """,
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton("▶️ PLAY", callback_data="main_menu")]]
+        )
     )
-
-    # ইমেজ সহ মেসেজ পাঠানো
-    await context.bot.send_photo(
-        chat_id=chat_id,
-        photo="https://i.ibb.co/q3RkVXLB/welcome.png",  # ✅ ওয়েলকাম ব্যানার
-        caption=welcome_text,
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("▶️ Play", callback_data="open_menu")]
-        ])
-    )
-    
+```
