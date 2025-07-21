@@ -1,49 +1,61 @@
-from telegram import Update
+import datetime
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-import config
-from data_manager import save_users  # ✅ যুক্ত করেছি
+from data_manager import get_user_data, update_user_data
 
-async def show_daily_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# সাত দিনের চেকইন রিওয়ার্ড
+REWARDS = [4, 8, 16, 32, 72, 90, 120]
+
+def get_day_index(last_checkin: str) -> int:
+    today = datetime.date.today()
+    if not last_checkin:
+        return 0
+    last_date = datetime.datetime.strptime(last_checkin, "%Y-%m-%d").date()
+    if last_date == today:
+        return -1  # Already checked in today
+    delta = (today - last_date).days
+    return 0 if delta > 1 else 1  # Reset if gap >1
+
+async def daily_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
-    
     user_id = query.from_user.id
-    user_data = config.USERS.setdefault(user_id, {
-        "coins": 0,
-        "daily_day": 0
-    })
+    user_data = get_user_data(user_id)
 
-    # Ensure daily_day is within valid range
-    day = user_data.get("daily_day", 0)
+    last_checkin = user_data.get("last_checkin")
+    day = user_data.get("checkin_day", 0)
 
-    if day >= 7:
-        await query.edit_message_text("✅ আপনি এই সপ্তাহে সব চেক-ইন সম্পন্ন করেছেন!\n\nআগামী সপ্তাহে আবার চেক-ইন শুরু হবে।")
+    checkin_index = get_day_index(last_checkin)
+    if checkin_index == -1:
+        await query.answer("✅ You've already checked in today!", show_alert=True)
         return
 
-    # Get reward from config
-    reward = config.DAILY_REWARD[day]
+    if checkin_index == 0:
+        day = 0  # reset day if missed a day
 
-    # ✅ Update user's coin and day
-    user_data["coins"] += reward
-    user_data["daily_day"] = day + 1
+    # Coin Reward দিন
+    if day < len(REWARDS):
+        reward = REWARDS[day]
+        user_data["wallet"] = user_data.get("wallet", 0) + reward
+        user_data["last_checkin"] = datetime.date.today().strftime("%Y-%m-%d")
+        user_data["checkin_day"] = day + 1
+        update_user_data(user_id, user_data)
 
-    save_users(config.USERS)  # ✅ এখানেই সেভ করে ফেললাম
+        # UI Message
+        msg = (
+            f"🎁 *Daily Check-in*\n\n"
+            f"📅 Day {day+1} Check-in Successful!\n"
+            f"💰 You've earned: *{reward} coins*\n"
+            f"🧮 Total Wallet: *{user_data['wallet']} coins*"
+        )
+    else:
+        msg = "✅ You've completed all 7 days! Check-in streak will reset tomorrow."
+        user_data["checkin_day"] = 0
+        update_user_data(user_id, user_data)
 
-    # Prepare check-in status list
-    checkmarks = ["✅" if i < user_data["daily_day"] else "🔓" for i in range(7)]
-
-    # Prepare message
-    text = (
-        "📅 <b>ডেইলি চেক-ইন:</b>\n\n"
-        f"১ম দিন - 4 🪙 {checkmarks[0]}\n"
-        f"২য় দিন - 8 🪙 {checkmarks[1]}\n"
-        f"৩য় দিন - 16 🪙 {checkmarks[2]}\n"
-        f"৪র্থ দিন - 32 🪙 {checkmarks[3]}\n"
-        f"৫ম দিন - 72 🪙 {checkmarks[4]}\n"
-        f"৬ষ্ঠ দিন - 90 🪙 {checkmarks[5]}\n"
-        f"৭ম দিন - 120 🪙 {checkmarks[6]}\n\n"
-        f"🎉 আজ আপনি পেয়েছেন <b>{reward}</b> কয়েন!"
+    keyboard = [[InlineKeyboardButton("🔙 Back to Home", callback_data="home")]]
+    await query.edit_message_text(
+        text=msg,
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
-
-    await query.edit_message_text(text=text, parse_mode="HTML")
     
