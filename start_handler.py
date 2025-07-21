@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from data_manager import get_user, add_user
+from data_manager import add_user, get_user
 
 WELCOME_IMG = "https://telegra.ph/file/9b33f0419d0ea9cc9f7c4.jpg"  # ✅ Telegra.ph image link
 
