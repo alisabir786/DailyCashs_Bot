@@ -47,7 +47,7 @@ async def start_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # স্পিনের আগে টাস্ক কমপ্লিট করলে এটি কল করো
-def mark_task_done_for_spin(user_id: https://youtu.be/79pqNVDbxts?si=nr7MD_uGO2E7glct ):
+def mark_task_done_for_spin(user_id:):
     user_data = get_user_data(user_id)
     user_data["spin_tasks_done"] = user_data.get("spin_tasks_done", 0) + 1
     update_user_data(user_id, user_data)
