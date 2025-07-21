@@ -43,4 +43,3 @@ def add_user(user_id, first_name):
 def get_all_users():
     data = load_data()
     return [int(uid) for uid in data.keys()]
-    
