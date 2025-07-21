@@ -1,12 +1,47 @@
-from pymongo import MongoClient
-from config import MONGO_URI
+python
+import json
+import os
 
-client = MongoClient(MONGO_URI)
-db = client["dailycashs_bot"]
+DATA_FILE = "user_data.json"
 
-users_col = db["users"]
-wallets_col = db["wallets"]
-spin_col = db["spins"]
-ref_col = db["referrals"]
-task_col = db["tasks"]
-withdraw_col = db["withdrawals"]
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w") as f:
+            json.dump({}, f)
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
+
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def get_user(user_id):
+    data = load_data()
+    return data.get(str(user_id), None)
+
+def update_user(user_id, new_data):
+    data = load_data()
+    user = data.get(str(user_id), {})
+    user.update(new_data)
+    data[str(user_id)] = user
+    save_data(data)
+
+def add_user(user_id, first_name):
+    data = load_data()
+    if str(user_id) not in data:
+        data[str(user_id)] = {
+            "coins": 0,
+            "checkin_day": 0,
+            "spin_count": 0,
+            "name": first_name,
+            "ref_by": None,
+            "ref_team": [],
+            "gen_rate": 0,
+            "photo": None,
+        }
+        save_data(data)
+
+def get_all_users():
+    data = load_data()
+    return [int(uid) for uid in data.keys()]
+  
