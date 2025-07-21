@@ -1,78 +1,49 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler
-import config
+from telegram.ext import ContextTypes
+from data_manager import get_user_data
 
-AWAITING_NAME, AWAITING_PHOTO = range(2)
-
-# ✅ Show profile
 async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user = query.from_user
-    user_data = config.USERS.get(user.id, {})
 
-    name = user_data.get("name", user.first_name)
-    coins = user_data.get("coins", 0)
+    user_data = get_user_data(user.id)
+    username = user.username or "Not Set"
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
 
+    # প্রোফাইল মেসেজ বানাও
+    text = (
+        f"👤 *User Profile*\n\n"
+        f"🆔 ID: `{user.id}`\n"
+        f"📛 Name: `{full_name}`\n"
+        f"🔰 Username: @{username}\n"
+        f"🏆 Level: {user_data.get('level', 'Basic')}\n"
+        f"📅 Joined: {user_data.get('joined', 'N/A')}\n\n"
+        f"✏️ You can update your *Name* and *Image*. ID and Username can't be changed."
+    )
+
+    # Edit Profile বাটন
     keyboard = [
-        [InlineKeyboardButton("Edit Name", callback_data="edit_name")],
-        [InlineKeyboardButton("Edit Photo", callback_data="edit_photo")],
-        [InlineKeyboardButton("Privacy", callback_data="privacy"),
-         InlineKeyboardButton("About", callback_data="about")],
-        [InlineKeyboardButton("Back", callback_data="menu")]
+        [InlineKeyboardButton("🖼 Update Photo", callback_data="update_photo")],
+        [InlineKeyboardButton("✏️ Update Name", callback_data="update_name")],
+        [InlineKeyboardButton("🔙 Back to Home", callback_data="home")]
     ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await query.answer()
-    await query.edit_message_text(
-        text=f"👤 *Profile*\n\n🆔 ID: `{user.id}`\n👤 Name: {name}\n🪙 Coins: {coins}",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
-# ✅ Ask for name
-async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text("✍️ Enter your new name:")
-    return AWAITING_NAME
-
-# ✅ Save name
-async def save_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    name = update.message.text.strip()
-    user_id = update.effective_user.id
-
-    config.USERS.setdefault(user_id, {})["name"] = name
-    await update.message.reply_text(f"✅ Name updated to *{name}*", parse_mode="Markdown")
-    return ConversationHandler.END
-
-# ✅ Ask for photo
-async def ask_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text("📸 Send your new profile photo:")
-    return AWAITING_PHOTO
-
-# ✅ Save photo
-async def save_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    photo_file_id = update.message.photo[-1].file_id
-
-    config.USERS.setdefault(user_id, {})["photo"] = photo_file_id
-    await update.message.reply_text("✅ Photo updated successfully!")
-    return ConversationHandler.END
-
-# ✅ Show Privacy
-async def show_privacy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(
-        text="🔒 *Privacy Policy*\n\nWe only store your Telegram ID, name, and game-related data to enhance your experience.\nWe never share your data with third parties.",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Back", callback_data="profile")]])
-    )
-
-# ✅ Show About
-async def show_about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(
-        text="ℹ️ *About DailyCashs*\n\nEarn coins by completing simple tasks and redeem them for real money via UPI.\n\nCreated by @Sabirdigital",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Back", callback_data="profile")]])
-    )
-    
+    # ছবি সহ প্রোফাইল পাঠাও
+    profile_pic = user_data.get("profile_pic_url")
+    if profile_pic:
+        await query.message.delete()
+        await context.bot.send_photo(
+            chat_id=query.message.chat_id,
+            photo=profile_pic,
+            caption=text,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    else:
+        await query.edit_message_text(
+            text=text,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+        
