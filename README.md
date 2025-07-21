@@ -37,3 +37,7 @@ DailyCashs_Bot/
 ├── task.py
 ├── referral.py
 ├── withdrawal.py
+Contact
+Developer: @Sabirdigital
+
+Bot: @DailyCashs_Bot
