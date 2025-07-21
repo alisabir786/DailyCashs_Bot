@@ -1,47 +1,20 @@
-# 💸 DailyCashs_Bot — Telegram Earning Game Bot
+# DailyCashs_Bot 💰
 
-A complete earning-style Telegram bot like an Android earning app. Users can earn coins by playing games, spinning, watching videos, and referring friends — and withdraw money via UPI.
+A complete Telegram Earning Bot like Android Apps with:
 
----
-
-## 🚀 Features
-
-- ✅ **Welcome Screen + Menu**
-- 💰 **Wallet Balance**
-- 👤 **Profile with Name & Photo**
-- 📅 **Daily Check-in (1–7 day rewards)**
-- 🎯 **Unlimited Spin with 0–100 Coin Win**
-- 🧩 **Tasks:** Game, Video Watch, Refer
-- 👥 **Referral System:** +10 coin per referral & 10% lifetime bonus
-- 💸 **Withdrawal System:** via UPI, minimum 2000 coin = ₹100
-- 🛡 **Admin Panel (via /panel)**
+- ✅ Spin (0–100 coins)
+- ✅ Daily Check-in (1–7 days)
+- ✅ Task Rewards (Game, Video, Refer)
+- ✅ Wallet, Profile
+- ✅ Withdrawal via UPI
+- ✅ Admin Panel
 
 ---
 
-## 🧠 Tech Stack
+## 🔧 Setup
 
-- Python 3.10+
-- [python-telegram-bot==20.6](https://github.com/python-telegram-bot/python-telegram-bot)
-- `python-dotenv` for config management
+1. Clone the repo:
 
----
-
-## 📦 Installation
-
-1. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/DailyCashs_Bot.git
+git clone https://github.com/alisabir786/DailyCashs_Bot.git
 cd DailyCashs_Bot
-
-## 🙋 Admin Access
-
-Use `/panel` command in bot to view admin features and control.
-
-## 🧾 License
-
-MIT License — free to use, modify and distribute.
-
-## 🧑‍💻 Author
-
-- 👤 Telegram: [@Sabirdigital](https://t.me/Sabirdigital)
-- 🔗 Bot: [@DailyCashs_Bot](https://t.me/DailyCashs_Bot)
