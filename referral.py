@@ -1,43 +1,56 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
-import config
-from data_manager import save_users  # ডেটা সেভ করার জন্য দরকার হবে
+from data_manager import get_user_data, update_user_data
+from spin import mark_task_done_for_spin
 
+BONUS_DIRECT = 10
+BONUS_PERCENT = 0.10  # 10%
+
+# 🔗 Show refer link
 async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    user = config.USERS.get(user_id)
+    user = update.effective_user
+    user_id = user.id
+    link = f"https://t.me/{context.bot.username}?start={user_id}"
 
-    # নতুন ইউজার হলে রেজিস্টার করে ফেলি
-    if user is None:
-        config.USERS[user_id] = {
-            "coins": 0,
-            "referrals": [],
-            "ref_bonus": 0,
-            "first_name": query.from_user.first_name
-        }
-        user = config.USERS[user_id]
-        save_users(config.USERS)  # ইউজার রেজিস্ট্রেশনের পর সেভ করা উচিত
+    user_data = get_user_data(user_id)
+    team = user_data.get("ref_team", [])
 
-    referral_link = f"https://t.me/{config.BOT_USERNAME.replace('@','')}?start={user_id}"
-    referred_users = user.get("referrals", [])
-    bonus = user.get("ref_bonus", 0)
-
-    text = (
-        f"👥 <b>Refer & Earn</b>\n\n"
-        "🔗 <b>Your Referral Link:</b>\n"
-        f"<code>{referral_link}</code>\n\n"
-        "🎁 <b>On Refer:</b> +10 Coin (for you)\n"
-        "💸 <b>Lifetime Bonus:</b> 10% of their earnings\n\n"
-        f"👫 <b>Total Referrals:</b> {len(referred_users)}\n"
-        f"💰 <b>Bonus Earned:</b> {bonus} 🪙"
+    msg = (
+        f"👥 *Refer & Earn!*\n\n"
+        f"🔗 Your Link:\n{link}\n\n"
+        f"💰 Earn {BONUS_DIRECT} coins + 10% lifetime income\n"
+        f"👤 Total Referrals: {len(team)}"
     )
 
-    await query.message.edit_text(
-        text,
-        parse_mode="HTML",
+    await update.callback_query.edit_message_text(
+        text=msg,
+        parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⬅️ Back", callback_data="open_menu")]
+            [InlineKeyboardButton("🔙 Back to Home", callback_data="home")]
         ])
     )
+
+# 🔄 Handle New Referral
+def handle_referral(user_id: int, ref_id: int):
+    if user_id == ref_id:
+        return
+
+    user_data = get_user_data(user_id)
+    if user_data.get("referred_by"):
+        return
+
+    ref_data = get_user_data(ref_id)
+
+    # Bonus to new user
+    user_data["wallet"] += BONUS_DIRECT
+    user_data["referred_by"] = ref_id
+    update_user_data(user_id, user_data)
+
+    # Bonus to referrer
+    ref_data["wallet"] += BONUS_DIRECT
+    ref_data.setdefault("ref_team", []).append(user_id)
+    update_user_data(ref_id, ref_data)
+
+    mark_task_done_for_spin(user_id)
+    mark_task_done_for_spin(ref_id)
     
