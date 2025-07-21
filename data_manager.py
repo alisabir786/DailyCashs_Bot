@@ -1,17 +1,35 @@
-# data_manager.py
+```python
+from pymongo import MongoClient
+from config import MONGO_URI
 
-import json
-import os
+client = MongoClient(MONGO_URI)
+db = client["dailycashs"]
+users = db["users"]
 
-DATA_FILE = "assets/users.json"
 
-def load_users():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+def get_user(user_id):
+    user = users.find_one({"_id": user_id})
+    if not user:
+        user = {
+            "_id": user_id,
+            "coins": 0,
+            "ref_by": None,
+            "ref_count": 0,
+            "ref_earn": 0,
+            "checkin": 0,
+            "spin_left": 5,
+            "tasks_done": [],
+            "name": "",
+            "photo": ""
+        }
+        users.insert_one(user)
+    return users.find_one({"_id": user_id})
 
-def save_users(data):
-    os.makedirs("assets", exist_ok=True)
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
+
+def update_user(user_id, data):
+    users.update_one({"_id": user_id}, {"$set": data})
+
+
+def add_coins(user_id, coins):
+    users.update_one({"_id": user_id}, {"$inc": {"coins": coins}})
+```
