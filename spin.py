@@ -23,7 +23,7 @@ async def start_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Task check
     tasks_done = user_data.get("spin_tasks_done", 0)
     if tasks_done < SPIN_COST:
-        await query.answer("🧩 Complete a task to spin!", show_alert=True)
+        await query.answer("🧩 Spin করার আগে ১টি টাস্ক কমপ্লিট করো!", show_alert=True)
         return
 
     # Spin result
@@ -38,8 +38,10 @@ async def start_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 Total Wallet: *{user_data['wallet']} coins*"
     )
 
-    keyboard = [[InlineKeyboardButton("🔄 Spin Again", callback_data="spin_again")],
-                [InlineKeyboardButton("🔙 Back to Home", callback_data="home")]]
+    keyboard = [
+        [InlineKeyboardButton("🔄 Spin Again", callback_data="spin_again")],
+        [InlineKeyboardButton("🔙 Back to Home", callback_data="home")]
+    ]
     await query.edit_message_text(
         text=msg,
         parse_mode="Markdown",
@@ -47,7 +49,7 @@ async def start_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # স্পিনের আগে টাস্ক কমপ্লিট করলে এটি কল করো
-def mark_task_done_for_spin(user_id:):
+def mark_task_done_for_spin(user_id):
     user_data = get_user_data(user_id)
     user_data["spin_tasks_done"] = user_data.get("spin_tasks_done", 0) + 1
     update_user_data(user_id, user_data)
