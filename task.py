@@ -1,83 +1,71 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ContextTypes
-from data_manager import get_user_data, update_user_data
-from spin import mark_task_done_for_spin
-import random
+from aiogram import types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from data_manager import log_task, get_today_task_count, update_balance, get_user
+from config import dp
 
-MAX_VIDEO_TASKS = 5
-MAX_GAME_TASKS = 5
-REWARD_PER_TASK = 5
-
-# 📺 ভিডিও Task
-async def watch_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    user_data = get_user_data(user_id)
-
-    done = user_data.get("video_tasks", 0)
-    if done >= MAX_VIDEO_TASKS:
-        await query.answer("✅ All video tasks completed today!", show_alert=True)
+# 🎮 গেম টাস্ক (2+3 টাইপ গেম)
+@dp.message_handler(commands=["game_task"])
+async def game_task(message: types.Message):
+    user_id = message.from_user.id
+    count = get_today_task_count(user_id, "game")
+    if count >= 5:
+        await message.answer("❌ আপনি আজকের জন্য ৫টি গেম টাস্ক কমপ্লিট করে ফেলেছেন।")
         return
 
-    user_data["video_tasks"] = done + 1
-    user_data["wallet"] += REWARD_PER_TASK
-    update_user_data(user_id, user_data)
-    mark_task_done_for_spin(user_id)
+    await message.answer("🔢 গেম প্রশ্ন: 2 + 3 = ?\nউত্তর দিন।")
 
-    await query.edit_message_text(
-        f"🎥 You watched a video and earned {REWARD_PER_TASK} coins!\n"
-        f"📦 Total wallet: {user_data['wallet']} coins",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎮 Play Game", callback_data="game_task")],
-            [InlineKeyboardButton("🔙 Back", callback_data="home")]
-        ])
+# ইউজার রিপ্লাই করে উত্তর দিবে
+@dp.message_handler(lambda message: message.text.strip().isdigit() and message.text.strip() in ["5", "৫"])
+async def check_game_answer(message: types.Message):
+    user_id = message.from_user.id
+    count = get_today_task_count(user_id, "game")
+    if count >= 5:
+        await message.answer("❌ আপনি আজকের জন্য ৫টি গেম টাস্ক কমপ্লিট করে ফেলেছেন।")
+        return
+
+    log_task(user_id, "game", 5)
+    await message.answer("✅ সঠিক উত্তর! আপনি পেয়েছেন 5 কয়েন 🎉")
+
+# 🎥 ভিডিও টাস্ক (Watch video and reward)
+@dp.message_handler(commands=["video_task"])
+async def video_task(message: types.Message):
+    user_id = message.from_user.id
+    count = get_today_task_count(user_id, "video")
+    if count >= 5:
+        await message.answer("❌ আপনি আজকের জন্য ৫টি ভিডিও টাস্ক করে ফেলেছেন।")
+        return
+
+    # ভিডিও বা লিঙ্ক পাঠানো যেতে পারে
+    markup = InlineKeyboardMarkup().add(
+        InlineKeyboardButton("🎬 ভিডিও দেখেছি ✅", callback_data="video_done")
     )
+    await message.answer("▶️ নিচের ভিডিওটি দেখুন:\n\nhttps://youtu.be/dQw4w9WgXcQ", reply_markup=markup)
 
-# 🎮 Game Task (Simple math)
-async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    user_data = get_user_data(user_id)
-
-    done = user_data.get("game_tasks", 0)
-    if done >= MAX_GAME_TASKS:
-        await query.answer("🎮 Game limit reached today!", show_alert=True)
+@dp.callback_query_handler(lambda call: call.data == "video_done")
+async def video_done_handler(call: types.CallbackQuery):
+    user_id = call.from_user.id
+    count = get_today_task_count(user_id, "video")
+    if count >= 5:
+        await call.message.edit_text("❌ আপনি আজকের জন্য ৫টি ভিডিও টাস্ক কমপ্লিট করে ফেলেছেন।")
         return
 
-    # Generate math problem
-    a = random.randint(1, 10)
-    b = random.randint(1, 10)
-    answer = a + b
+    log_task(user_id, "video", 5)
+    await call.message.edit_text("🎉 ধন্যবাদ! আপনি ভিডিও দেখার জন্য 5 কয়েন পেয়েছেন।")
 
-    context.user_data["game_answer"] = answer
-    user_data["game_tasks"] = done + 1
-    update_user_data(user_id, user_data)
+# 👥 রেফার টাস্ক (Refer friend)
+@dp.message_handler(commands=["refer"])
+async def refer_task(message: types.Message):
+    user_id = message.from_user.id
+    user = get_user(user_id)
+    username = message.from_user.username or "your_telegram_id"
+    invite_link = f"https://t.me/DailyCashs_Bot?start={user_id}"
 
-    await query.edit_message_text(
-        f"🧠 Solve this:\n\n`{a} + {b} = ?`\n\n👉 Reply the answer here:",
+    await message.answer(
+        f"👥 *রেফার ও আর্ন করুন!*\n\n"
+        f"➕ প্রতি রেফারে পাবেন: 10 কয়েন\n"
+        f"🎁 রেফার করা ইউজার ইনকাম করলে পাবেন 10% লাইফটাইম বোনাস\n\n"
+        f"🔗 আপনার লিঙ্ক:\n`{invite_link}`\n\n"
+        f"📢 শেয়ার করুন বন্ধুদের মাঝে!",
         parse_mode="Markdown"
     )
-
-# 🎮 Game Answer Handler
-async def handle_game_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    text = update.message.text.strip()
-
-    if "game_answer" not in context.user_data:
-        return
-
-    correct = context.user_data["game_answer"]
-    if text.isdigit() and int(text) == correct:
-        user_data = get_user_data(user_id)
-        user_data["wallet"] += REWARD_PER_TASK
-        update_user_data(user_id, user_data)
-        mark_task_done_for_spin(user_id)
-
-        await update.message.reply_text(
-            f"✅ Correct! You earned {REWARD_PER_TASK} coins.\n💰 Wallet: {user_data['wallet']} coins"
-        )
-    else:
-        await update.message.reply_text("❌ Wrong answer. Try again later.")
-
-    context.user_data.pop("game_answer", None)
     
