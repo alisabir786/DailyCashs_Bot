@@ -1,56 +1,34 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ContextTypes
-from data_manager import get_user_data, update_user_data
-from spin import mark_task_done_for_spin
+from aiogram import types
+from data_manager import add_user, get_user, update_balance
+from aiogram.dispatcher import FSMContext
+from config import dp
 
-BONUS_DIRECT = 10
-BONUS_PERCENT = 0.10  # 10%
-
-# 🔗 Show refer link
-async def show_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    user_id = user.id
-    link = f"https://t.me/{context.bot.username}?start={user_id}"
-
-    user_data = get_user_data(user_id)
-    team = user_data.get("ref_team", [])
-
-    msg = (
-        f"👥 *Refer & Earn!*\n\n"
-        f"🔗 Your Link:\n{link}\n\n"
-        f"💰 Earn {BONUS_DIRECT} coins + 10% lifetime income\n"
-        f"👤 Total Referrals: {len(team)}"
+@dp.message_handler(commands=['refer'])
+async def referral_info(message: types.Message):
+    user_id = message.from_user.id
+    refer_link = f"https://t.me/{dp.bot.username}?start={user_id}"
+    await message.answer(
+        f"🔗 আপনার রেফার লিংক:\n{refer_link}\n\n"
+        "🎁 প্রতি সফল রেফারে আপনি পাবেন:\n"
+        "➤ 10 কয়েন ইনস্ট্যান্ট\n"
+        "➤ 10% লাইফটাইম টিম ইনকাম!"
     )
 
-    await update.callback_query.edit_message_text(
-        text=msg,
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔙 Back to Home", callback_data="home")]
-        ])
-    )
+@dp.message_handler(commands=["start"])
+async def handle_start(message: types.Message):
+    user_id = message.from_user.id
+    name = message.from_user.full_name
+    username = message.from_user.username
 
-# 🔄 Handle New Referral
-def handle_referral(user_id: int, ref_id: int):
-    if user_id == ref_id:
-        return
+    args = message.get_args()
+    ref_by = int(args) if args.isdigit() and int(args) != user_id else None
 
-    user_data = get_user_data(user_id)
-    if user_data.get("referred_by"):
-        return
-
-    ref_data = get_user_data(ref_id)
-
-    # Bonus to new user
-    user_data["wallet"] += BONUS_DIRECT
-    user_data["referred_by"] = ref_id
-    update_user_data(user_id, user_data)
-
-    # Bonus to referrer
-    ref_data["wallet"] += BONUS_DIRECT
-    ref_data.setdefault("ref_team", []).append(user_id)
-    update_user_data(ref_id, ref_data)
-
-    mark_task_done_for_spin(user_id)
-    mark_task_done_for_spin(ref_id)
-    
+    user = get_user(user_id)
+    if not user:
+        add_user(user_id, name, username, ref_by=ref_by)
+        if ref_by:
+            update_balance(ref_by, 10)
+            await message.bot.send_message(ref_by, f"🎉 আপনি একজন রেফার করেছেন এবং 10 কয়েন পেয়েছেন!")
+        await message.answer("✅ আপনি সফলভাবে যুক্ত হয়েছেন!")
+    else:
+        await message.answer("👋 আপনি আগেই যুক্ত হয়েছেন।")
