@@ -1,33 +1,34 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
-from data_manager import add_user, get_user
+from telegram.ext import CallbackContext, CommandHandler
+from data_manager import db
 
-WELCOME_IMG = "https://telegra.ph/file/9b33f0419d0ea9cc9f7c4.jpg"  # ✅ Telegra.ph image link
-
-# ফাংশন: /start কমান্ড
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def start(update: Update, context: CallbackContext):
     user = update.effective_user
-
-    # ইউজার না থাকলে add_user দিয়ে যোগ করো
-    if not get_user(user.id):
-        add_user(user.id, user.first_name)
-
-    # Inline Keyboard: ▶️ Play
-    keyboard = [[InlineKeyboardButton("▶️ Play", callback_data="open_menu")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Send welcome image with caption
-    await context.bot.send_photo(
-        chat_id=update.effective_chat.id,
-        photo=WELCOME_IMG,
-        caption=(
-            f"👋 হ্যালো {user.first_name}!\n\n"
-            "🎮 স্বাগতম *DailyCashs Bot*-এ!\n\n"
-            "💸 টাস্ক, স্পিন এবং রেফার করে ইনকাম করো!\n"
-            "💰 টাকা তুলতে পারবে যখন গোল পূর্ণ হবে!\n\n"
-            "👇 শুরু করতে *Play* চাপো!"
-        ),
-        parse_mode="Markdown",
-        reply_markup=reply_markup
+    
+    # ইউজার চেক করুন
+    if not db.get_user(user.id):
+        db.create_user(user.id, user.first_name, user.last_name, user.username)
+    
+    # ওয়েলকাম মেসেজ
+    welcome_text = (
+        "🎉 স্বাগতম DailyCashs বটে! 🎉\n\n"
+        "🎮 গেম খেলে, টাস্ক কমপ্লিট করে, স্পিন হুইল ঘুরিয়ে টাকা ইনকাম করুন!\n"
+        "💰 প্রতিদিন ডেইলি রিওয়ার্ড ক্লেইম করুন এবং রেফার করে আরও বেশি আয় করুন!"
     )
     
+    # বাটন
+    keyboard = [
+        [InlineKeyboardButton("▶️ প্লে বাটন", callback_data='play')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # ইমেজ সহ মেসেজ সেন্ড
+    context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=open('assets/banner.jpg', 'rb'),
+        caption=welcome_text,
+        reply_markup=reply_markup
+    )
+
+def setup_start_handler(dp):
+    dp.add_handler(CommandHandler("start", start))
