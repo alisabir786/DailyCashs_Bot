@@ -42,6 +42,7 @@ def main():
             NAME_UPDATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_new_name)],
         },
         fallbacks=[],
+        per_message=True  # ⚠️ Warning দূর করার জন্য এটি জরুরি
     ))
 
     print("🤖 Bot is running...")
