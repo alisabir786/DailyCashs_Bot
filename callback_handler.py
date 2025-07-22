@@ -4,7 +4,7 @@ from start_handler import start_menu
 from wallet import show_wallet
 from profile import show_profile
 from daily_checkin import daily_checkin
-from spin import spin_wheel
+from spin import start_spin
 from task import watch_video, play_game
 from referral import show_referral
 
@@ -22,7 +22,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "checkin":
         await daily_checkin(update, context)
     elif data == "spin":
-        await spin_wheel(update, context)
+        await start_spin(update, context)
     elif data == "watch_video":
         await watch_video(update, context)
     elif data == "game_task":
