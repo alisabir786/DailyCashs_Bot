@@ -1,27 +1,56 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from data_manager import get_balance, update_balance
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import dp
+from data_manager import get_balance, update_balance
 
-# ✅ উইথড্রাল স্টেট
+# 📌 FSM State
 class WithdrawState(StatesGroup):
     waiting_for_upi = State()
-    waiting_for_amount = State()
+    waiting_for_confirm = State()
 
-# ✅ উইথড্রাল শুরু
-@dp.message_handler(commands=['withdraw'])
-async def start_withdrawal(message: types.Message):
+# 📌 Inline Withdraw UI
+@dp.message_handler(commands=["withdraw"])
+async def handle_withdraw(message: types.Message):
     user_id = message.from_user.id
     balance = get_balance(user_id)
+
     if balance < 2000:
-        await message.answer("❌ উইথড্র করতে হলে অন্তত 2000 কয়েন লাগবে।")
+        await message.answer("❌ উইথড্র করতে অন্তত 2000 কয়েন লাগবে (₹100)।")
         return
 
-    await message.answer("💳 আপনার UPI ID দিন:")
+    # Withdrawal options
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton("₹100 = 2000", callback_data="withdraw_100"),
+        InlineKeyboardButton("₹300 = 6000", callback_data="withdraw_300"),
+        InlineKeyboardButton("₹500 = 10000", callback_data="withdraw_500"),
+        InlineKeyboardButton("₹1000 = 20000", callback_data="withdraw_1000"),
+    )
+
+    await message.answer("💳 আপনি কত টাকা উইথড্র করতে চান?", reply_markup=kb)
+
+# 📌 Callback Handler (amount select)
+@dp.callback_query_handler(lambda c: c.data.startswith("withdraw_"))
+async def confirm_withdraw(callback_query: types.CallbackQuery, state: FSMContext):
+    amount = int(callback_query.data.split("_")[1])
+    coins_required = amount * 20
+    user_id = callback_query.from_user.id
+    balance = get_balance(user_id)
+
+    if balance < coins_required:
+        await callback_query.answer("❌ আপনার কাছে যথেষ্ট কয়েন নেই।", show_alert=True)
+        return
+
+    await state.update_data(amount=amount, coins_required=coins_required)
+
+    await callback_query.message.edit_text(
+        f"🔐 দয়া করে আপনার UPI ID পাঠান\n\n💸 আপনি ₹{amount} উইথড্র করতে যাচ্ছেন।"
+    )
     await WithdrawState.waiting_for_upi.set()
 
-# ✅ UPI গ্রহণ
+# 📌 Receive UPI & confirm
 @dp.message_handler(state=WithdrawState.waiting_for_upi)
 async def receive_upi(message: types.Message, state: FSMContext):
     upi = message.text.strip()
@@ -30,51 +59,33 @@ async def receive_upi(message: types.Message, state: FSMContext):
         return
 
     await state.update_data(upi=upi)
+    data = await state.get_data()
 
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    markup.add("₹100 (2000 কয়েন)", "₹300 (6000 কয়েন)", "₹500 (10000 কয়েন)", "₹1000 (20000 কয়েন)")
-    await message.answer("🔢 আপনি কত টাকা তুলতে চান?\n\nমিন 2000 কয়েন = ₹100", reply_markup=markup)
-    await WithdrawState.waiting_for_amount.set()
-
-# ✅ Amount গ্রহণ ও প্রক্রিয়া
-@dp.message_handler(state=WithdrawState.waiting_for_amount)
-async def receive_amount(message: types.Message, state: FSMContext):
-    amount_map = {
-        "₹100 (2000 কয়েন)": 2000,
-        "₹300 (6000 কয়েন)": 6000,
-        "₹500 (10000 কয়েন)": 10000,
-        "₹1000 (20000 কয়েন)": 20000
-    }
-
-    coins_required = amount_map.get(message.text)
-    if coins_required is None:
-        await message.answer("❌ তালিকাভুক্ত অপশন থেকে বেছে নিন।")
-        return
-
+    coins_required = data["coins_required"]
+    amount = data["amount"]
     user_id = message.from_user.id
     balance = get_balance(user_id)
+
     if balance < coins_required:
         await message.answer("❌ আপনার কাছে যথেষ্ট কয়েন নেই।")
+        await state.finish()
         return
 
-    data = await state.get_data()
-    upi_id = data["upi"]
-
-    # কয়েন কেটে ফেলা হচ্ছে
+    # কেটে ফেলা হচ্ছে
     update_balance(user_id, -coins_required)
 
     await message.answer(
-        f"✅ আপনার উইথড্রাল রিকোয়েস্ট সফলভাবে গ্রহণ করা হয়েছে!\n\n"
-        f"💳 UPI: `{upi_id}`\n"
-        f"💰 অ্যামাউন্ট: {message.text}\n\n"
-        "⏳ 24 ঘণ্টার মধ্যে পেমেন্ট সম্পন্ন হবে।",
+        f"✅ উইথড্রাল রিকোয়েস্ট গ্রহণ করা হয়েছে!\n\n"
+        f"💳 UPI: `{upi}`\n"
+        f"💰 Amount: ₹{amount} ({coins_required} কয়েন)\n"
+        f"⏳ ২৪ ঘণ্টার মধ্যে পেমেন্ট হবে।",
         parse_mode="Markdown"
     )
 
-    # অ্যাডমিনকে নোটিফাই (প্রয়োজনে টেলিগ্রাম ইউজার আইডি চেঞ্জ করো)
+    # Admin Notification
     await dp.bot.send_message(
-        6955653010,  # Admin/User ID
-        f"📥 নতুন উইথড্রাল রিকোয়েস্ট:\n\n👤 User: {message.from_user.full_name}\n🆔 ID: {user_id}\n💳 UPI: {upi_id}\n💰 Amount: {message.text}"
+        6955653010,
+        f"📥 নতুন উইথড্রাল:\n\n👤 {message.from_user.full_name}\n🆔 {user_id}\n💳 UPI: {upi}\n💰 Amount: ₹{amount} ({coins_required} কয়েন)"
     )
 
     await state.finish()
