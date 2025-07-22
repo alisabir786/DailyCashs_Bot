@@ -1,16 +1,30 @@
-from aiogram import executor
-from config import dp
+import logging
+from telegram.ext import Updater, Dispatcher
+from config import Config
+from start_handler import setup_start_handler
+from callback_handler import setup_callback_handlers
+from message_handler import setup_message_handlers
 
-# All Handlers Import
-from start_handler import *
-from wallet import *
-from profile import *
-from daily_checkin import *
-from spin import *
-from task import *
-from referral import *
-from withdrawal import *
+# লগিং কনফিগারেশন
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
-if __name__ == "__main__":
-    print("🚀 Bot is running...")
-    executor.start_polling(dp, skip_updates=True)
+def main():
+    updater = Updater(Config.BOT_TOKEN)
+    dp = updater.dispatcher
+    
+    # হ্যান্ডলার সেটআপ
+    setup_start_handler(dp)
+    setup_callback_handlers(dp)
+    setup_message_handlers(dp)
+    
+    # বট স্টার্ট করুন
+    updater.start_polling()
+    logger.info("Bot started successfully!")
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
