@@ -1,136 +1,81 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler
-import config
-from message_handler import handle_text
+from aiogram import types
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from data_manager import get_balance, update_balance
+from config import dp
 
-# ✅ Withdrawal states
-AWAITING_UPI, AWAITING_AMOUNT = range(2)
+# ✅ উইথড্রাল স্টেট
+class WithdrawState(StatesGroup):
+    waiting_for_upi = State()
+    waiting_for_amount = State()
 
-# ✅ Show Withdrawal Menu
-async def show_withdrawal_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    keyboard = [
-        [InlineKeyboardButton("₹100 = 2000 Coins", callback_data="withdraw_10")],
-        [InlineKeyboardButton("₹200 = 4000 Coins", callback_data="withdraw_20")],
-        [InlineKeyboardButton("₹300 = 6000 Coins", callback_data="withdraw_30")],
-        [InlineKeyboardButton("Back", callback_data="menu")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text("💸 Select withdrawal amount:", reply_markup=reply_markup)
-    return AWAITING_AMOUNT
-
-# ✅ Process Withdraw (Conversation handler needs this wrapper)
-async def process_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    return await handle_withdrawal_selection(update, context)
-
-# ✅ Handle withdrawal amount selection
-async def handle_withdrawal_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    user_id = query.from_user.id
-    data = query.data
-
-    if not data.startswith("withdraw_"):
-        await query.answer("❌ Invalid selection.")
+# ✅ উইথড্রাল শুরু
+@dp.message_handler(commands=['withdraw'])
+async def start_withdrawal(message: types.Message):
+    user_id = message.from_user.id
+    balance = get_balance(user_id)
+    if balance < 2000:
+        await message.answer("❌ উইথড্র করতে হলে অন্তত 2000 কয়েন লাগবে।")
         return
 
-    amount = int(data.split("_")[1])
-    coins_required = int((amount / config.COIN_TO_TAKA) * config.MIN_WITHDRAWAL)
+    await message.answer("💳 আপনার UPI ID দিন:")
+    await WithdrawState.waiting_for_upi.set()
 
-    user_data = config.USERS.get(user_id, {"coins": 0})
-    coins = user_data.get("coins", 0)
+# ✅ UPI গ্রহণ
+@dp.message_handler(state=WithdrawState.waiting_for_upi)
+async def receive_upi(message: types.Message, state: FSMContext):
+    upi = message.text.strip()
+    if "@" not in upi:
+        await message.answer("❌ সঠিক UPI ID দিন (উদাহরণ: yourupi@bank):")
+        return
 
-    if coins < coins_required:
-        await query.edit_message_text(
-            text=f"❌ You need {coins_required} coins to withdraw ₹{amount}.\nYour balance: {coins} coins."
-        )
-        return ConversationHandler.END
+    await state.update_data(upi=upi)
 
-    context.user_data["withdraw_amount"] = amount
-    await query.edit_message_text("💳 Please enter your UPI ID to proceed:")
-    return AWAITING_UPI
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add("₹100 (2000 কয়েন)", "₹300 (6000 কয়েন)", "₹500 (10000 কয়েন)", "₹1000 (20000 কয়েন)")
+    await message.answer("🔢 আপনি কত টাকা তুলতে চান?\n\nমিন 2000 কয়েন = ₹100", reply_markup=markup)
+    await WithdrawState.waiting_for_amount.set()
 
-# ✅ Get UPI ID from user
-async def get_upi_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    upi_id = update.message.text.strip()
+# ✅ Amount গ্রহণ ও প্রক্রিয়া
+@dp.message_handler(state=WithdrawState.waiting_for_amount)
+async def receive_amount(message: types.Message, state: FSMContext):
+    amount_map = {
+        "₹100 (2000 কয়েন)": 2000,
+        "₹300 (6000 কয়েন)": 6000,
+        "₹500 (10000 কয়েন)": 10000,
+        "₹1000 (20000 কয়েন)": 20000
+    }
 
-    if "@" not in upi_id:
-        await update.message.reply_text("❌ Invalid UPI ID. Please enter again:")
-        return AWAITING_UPI
+    coins_required = amount_map.get(message.text)
+    if coins_required is None:
+        await message.answer("❌ তালিকাভুক্ত অপশন থেকে বেছে নিন।")
+        return
 
-    context.user_data["upi_id"] = upi_id
-    amount = context.user_data.get("withdraw_amount")
-    coins_required = int((amount / config.COIN_TO_TAKA) * config.MIN_WITHDRAWAL)
+    user_id = message.from_user.id
+    balance = get_balance(user_id)
+    if balance < coins_required:
+        await message.answer("❌ আপনার কাছে যথেষ্ট কয়েন নেই।")
+        return
 
-    user_data = config.USERS.get(user_id, {"coins": 0})
+    data = await state.get_data()
+    upi_id = data["upi"]
 
-    if user_data["coins"] < coins_required:
-        await update.message.reply_text("❌ Insufficient coins.")
-        return ConversationHandler.END
+    # কয়েন কেটে ফেলা হচ্ছে
+    update_balance(user_id, -coins_required)
 
-    # Deduct coins and record
-    user_data["coins"] -= coins_required
-    user_data.setdefault("withdrawals", []).append({
-        "amount": amount,
-        "upi_id": upi_id
-    })
-    config.USERS[user_id] = user_data
-
-    await update.message.reply_text(
-        f"✅ Withdrawal request for ₹{amount} received!\nUPI: `{upi_id}`\n\n⏳ It will be processed soon.",
+    await message.answer(
+        f"✅ আপনার উইথড্রাল রিকোয়েস্ট সফলভাবে গ্রহণ করা হয়েছে!\n\n"
+        f"💳 UPI: `{upi_id}`\n"
+        f"💰 অ্যামাউন্ট: {message.text}\n\n"
+        "⏳ 24 ঘণ্টার মধ্যে পেমেন্ট সম্পন্ন হবে।",
         parse_mode="Markdown"
     )
 
-    # Notify Admin
-    owner_id = int(config.OWNER_ID)
-    try:
-        await context.bot.send_message(
-            chat_id=owner_id,
-            text=f"💰 New Withdrawal Request\n\nUser: [{update.effective_user.first_name}](tg://user?id={user_id})\nAmount: ₹{amount}\nUPI: `{upi_id}`\nBalance Left: {user_data['coins']} coins",
-            parse_mode="Markdown"
-        )
-    except:
-        pass
-
-    return ConversationHandler.END
-
-# ✅ Show current withdrawal info
-async def show_withdrawal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    user_data = config.USERS.get(user_id, {"coins": 0})
-
-    coins = user_data.get("coins", 0)
-    taka = coins // config.COIN_TO_TAKA
-    can_withdraw = "✅ Yes" if coins >= config.MIN_WITHDRAWAL else "❌ Not Yet"
-
-    await query.answer()
-    await query.edit_message_text(
-        text=(
-            f"💰 Withdrawal Info:\n\n"
-            f"Coins: {coins} 🪙\n"
-            f"Estimated ₹: {taka}\n"
-            f"Eligible for Withdrawal: {can_withdraw}\n\n"
-            f"➡️ Minimum {config.MIN_WITHDRAWAL} coins required for withdrawal.\n"
-            f"Select 'Withdraw' to proceed."
-        ),
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Withdraw Now", callback_data="withdraw")],
-            [InlineKeyboardButton("Back", callback_data="menu")]
-        ])
+    # অ্যাডমিনকে নোটিফাই (প্রয়োজনে টেলিগ্রাম ইউজার আইডি চেঞ্জ করো)
+    await dp.bot.send_message(
+        6955653010,  # Admin/User ID
+        f"📥 নতুন উইথড্রাল রিকোয়েস্ট:\n\n👤 User: {message.from_user.full_name}\n🆔 ID: {user_id}\n💳 UPI: {upi_id}\n💰 Amount: {message.text}"
     )
 
-# ✅ Fallback: Handle UPI input if outside conversation
-async def handle_upi_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if "@" in text:
-        return await get_upi_id(update, context)
-    else:
-        return await handle_text(update, context)
-        
+    await state.finish()
+    
